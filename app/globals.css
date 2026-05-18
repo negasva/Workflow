@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #222222;
+  --border: #2a2a2a;
+  --text-primary: #f0f0f0;
+  --text-muted: #888888;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#__next,
+main {
+  height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* React Flow overrides */
+.react-flow__background {
+  background-color: #0f0f0f !important;
+}
+
+.react-flow__edge-path {
+  stroke: #555 !important;
+  stroke-width: 2 !important;
+}
+
+.react-flow__arrowhead {
+  fill: #555 !important;
+}
+
+.react-flow__handle {
+  width: 10px !important;
+  height: 10px !important;
+  background: #555 !important;
+  border: 2px solid #333 !important;
+  transition: background 0.15s;
+}
+
+.react-flow__handle:hover {
+  background: #888 !important;
+}
+
+.react-flow__controls {
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
+}
+
+.react-flow__controls button {
+  background: #1a1a1a !important;
+  border-bottom: 1px solid #2a2a2a !important;
+  color: #ccc !important;
+  fill: #ccc !important;
+}
+
+.react-flow__controls button:hover {
+  background: #2a2a2a !important;
+}
+
+.react-flow__minimap {
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
+}
+
+/* Bold from asterisks */
+.bold-text strong {
+  font-weight: 700;
+}
+
+/* WhatsApp-style text rendering */
+.wapp-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
