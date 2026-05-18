@@ -1,13 +1,15 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Kit, Nodo, Conexion } from '@/types'
 import Sidebar from '@/components/Sidebar'
 import ModoVenta from '@/components/ModoVenta'
-import dynamic from 'next/dynamic'
+import dynamicImport from 'next/dynamic'
 
-const ModoEditor = dynamic(() => import('@/components/ModoEditor'), { ssr: false })
+const ModoEditor = dynamicImport(() => import('@/components/ModoEditor'), { ssr: false })
 
 export default function Home() {
   const [kits, setKits] = useState<Kit[]>([])
