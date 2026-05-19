@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'TattoFlow',
+  title: 'CopyFlow',
   description: 'Gestiona tus flujos de ventas por WhatsApp',
 }
 

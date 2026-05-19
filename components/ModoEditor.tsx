@@ -391,13 +391,13 @@ export default function ModoEditor({
   // Snap
   const [snapEnabled, setSnapEnabled] = useState(false)
   useEffect(() => {
-    const saved = localStorage.getItem('tattoflow-snap')
+    const saved = localStorage.getItem('copyflow-snap')
     if (saved !== null) setSnapEnabled(saved === 'true')
   }, [])
   const toggleSnap = useCallback(() => {
     setSnapEnabled((s) => {
       const next = !s
-      localStorage.setItem('tattoflow-snap', String(next))
+      localStorage.setItem('copyflow-snap', String(next))
       return next
     })
   }, [])
