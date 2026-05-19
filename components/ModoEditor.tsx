@@ -94,19 +94,34 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
           boxSizing: 'border-box',
         }}
       >
-        {/* 2 handles per node, both type="source" + connectionMode="loose"
-            allows unlimited connections in any direction */}
+        {/* 2 source handles + connectionMode loose = unlimited any-direction.
+            Offset to top:30% so they don't overlap NodeResizer's middle-edge
+            handles (which sit at 50%). Bigger size = easier to grab. */}
         <Handle
           id="left"
           type="source"
           position={Position.Left}
-          style={{ background: '#666', width: 11, height: 11 }}
+          style={{
+            top: '30%',
+            background: color,
+            width: 14,
+            height: 14,
+            border: '2px solid #0f0f0f',
+            zIndex: 10,
+          }}
         />
         <Handle
           id="right"
           type="source"
           position={Position.Right}
-          style={{ background: '#666', width: 11, height: 11 }}
+          style={{
+            top: '30%',
+            background: color,
+            width: 14,
+            height: 14,
+            border: '2px solid #0f0f0f',
+            zIndex: 10,
+          }}
         />
 
         <div
@@ -434,17 +449,24 @@ export default function ModoEditor({
         .single()
       if (nErr || !newNodo) return
 
-      const { data: newConn } = await supabase
+      const connBase = {
+        kit_id: kit.id,
+        nodo_origen_id: parentId,
+        nodo_destino_id: newNodo.id,
+      }
+      let { data: newConn } = await supabase
         .from('conexiones')
-        .insert({
-          kit_id: kit.id,
-          nodo_origen_id: parentId,
-          nodo_destino_id: newNodo.id,
-          source_handle: 'right',
-          target_handle: 'left',
-        })
+        .insert({ ...connBase, source_handle: 'right', target_handle: 'left' })
         .select()
         .single()
+      if (!newConn) {
+        const retry = await supabase
+          .from('conexiones')
+          .insert(connBase)
+          .select()
+          .single()
+        newConn = retry.data
+      }
 
       const updatedNodos = [...nodos, newNodo]
       setNodos(updatedNodos)
@@ -536,21 +558,39 @@ export default function ModoEditor({
       .eq('id', node.id)
   }, [])
 
-  // Manual connection (drag from handle) — now stores handle IDs
+  // Manual connection (drag from handle) — tolerates missing handle columns
   const onConnect = useCallback(
     async (connection: Connection) => {
       if (!connection.source || !connection.target) return
-      const { data, error } = await supabase
+
+      const base = {
+        kit_id: kit.id,
+        nodo_origen_id: connection.source,
+        nodo_destino_id: connection.target,
+      }
+
+      // Try with handle columns first; if the migration hasn't been run, retry
+      // without them so connections still work.
+      let { data, error } = await supabase
         .from('conexiones')
         .insert({
-          kit_id: kit.id,
-          nodo_origen_id: connection.source,
-          nodo_destino_id: connection.target,
+          ...base,
           source_handle: connection.sourceHandle,
           target_handle: connection.targetHandle,
         })
         .select()
         .single()
+
+      if (error) {
+        const retry = await supabase
+          .from('conexiones')
+          .insert(base)
+          .select()
+          .single()
+        data = retry.data
+        error = retry.error
+      }
+
       if (!error && data) {
         setRfEdges((eds) =>
           addEdge(
@@ -589,7 +629,7 @@ export default function ModoEditor({
     const newSourceHandle = flipHandle(edge.targetHandle as string | null | undefined)
     const newTargetHandle = flipHandle(edge.sourceHandle as string | null | undefined)
 
-    await supabase
+    const upd = await supabase
       .from('conexiones')
       .update({
         nodo_origen_id: newSource,
@@ -598,6 +638,12 @@ export default function ModoEditor({
         target_handle: newTargetHandle,
       })
       .eq('id', edge.id)
+    if (upd.error) {
+      await supabase
+        .from('conexiones')
+        .update({ nodo_origen_id: newSource, nodo_destino_id: newTarget })
+        .eq('id', edge.id)
+    }
 
     setRfEdges((eds) =>
       eds.map((e) =>
