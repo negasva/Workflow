@@ -313,7 +313,16 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
                       : { background: '#1a1a1a', color: '#666', border: '1.5px solid #2a2a2a' }
                   }
                 >
-                  {t === 'inicio' ? '🌟' : t === 'yo' ? '👤' : '💬'} {t}
+                  <span className="inline-flex items-center gap-1">
+                    {t === 'inicio' ? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    ) : t === 'yo' ? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    )}
+                    {t}
+                  </span>
                 </button>
               )
             })}
@@ -327,7 +336,10 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
         </div>
 
         <div className="text-xs text-[#555] bg-[#161616] border border-[#222] rounded-lg px-3 py-2.5 leading-relaxed">
-          💡 Arrastra los bordes del nodo en el canvas para redimensionarlo.
+          <span className="inline-flex items-start gap-1.5">
+            <svg className="shrink-0 mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Arrastra los bordes del nodo en el canvas para redimensionarlo.
+          </span>
         </div>
       </div>
 
@@ -337,7 +349,12 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
           disabled={saving}
           className="w-full bg-[#3B82F6] hover:bg-[#2563eb] disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors"
         >
-          {saving ? 'Guardando...' : '💾 Guardar cambios'}
+          {saving ? 'Guardando...' : (
+            <span className="inline-flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Guardar cambios
+            </span>
+          )}
         </button>
         <button
           onClick={handleDelete}
@@ -348,7 +365,17 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
               : 'bg-[#1a1a1a] hover:bg-[#222] text-[#888] hover:text-red-400'
           }`}
         >
-          {deleting ? 'Eliminando...' : confirmDelete ? '⚠️ Confirmar eliminación' : '🗑️ Eliminar nodo'}
+          {deleting ? 'Eliminando...' : confirmDelete ? (
+            <span className="inline-flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Confirmar eliminación
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              Eliminar nodo
+            </span>
+          )}
         </button>
         {confirmDelete && (
           <button
@@ -779,7 +806,10 @@ export default function ModoEditor({
                   : { background: 'rgba(17,17,17,0.8)', color: '#555', border: '1.5px solid #2a2a2a' }
               }
             >
-              ⊞ Snap
+              <span className="inline-flex items-center gap-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Snap
+              </span>
             </button>
           </div>
         </Panel>
@@ -809,13 +839,15 @@ export default function ModoEditor({
             onClick={handleFlipEdge}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#3B82F6] hover:bg-[#3B82F620] transition-colors"
           >
-            ↔ Invertir dirección
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            Invertir dirección
           </button>
           <button
             onClick={handleDeleteEdge}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/20 transition-colors"
           >
-            🗑️ Eliminar
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Eliminar
           </button>
         </div>
       )}

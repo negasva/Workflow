@@ -72,7 +72,10 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
     return (
       <div className="flex-1 flex items-center justify-center text-[#555]">
         <div className="text-center">
-          <div className="text-5xl mb-4">🖋️</div>
+          <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 4V16C8 17.1046 8.89543 18 10 18L18 18C19.1046 18 20 17.1046 20 16V7.24162C20 6.7034 19.7831 6.18789 19.3982 5.81161L16.0829 2.56999C15.7092 2.2046 15.2074 2 14.6847 2H10C8.89543 2 8 2.89543 8 4Z" stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 18V20C16 21.1046 15.1046 22 14 22H6C4.89543 22 4 21.1046 4 20V9C4 7.89543 4.89543 7 6 7H8" stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           <p className="text-lg">No hay nodos en este kit.</p>
           <p className="text-sm mt-1">Ve al modo editor para crear el flujo.</p>
         </div>
@@ -107,7 +110,10 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
           onClick={handleReset}
           className="text-sm text-[#888] hover:text-white transition-colors"
         >
-          ↺ Inicio
+            <span className="inline-flex items-center gap-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+            Inicio
+          </span>
         </button>
         <div className="ml-auto text-xs text-[#444] font-mono">
           Paso {history.length + 1}
@@ -131,7 +137,22 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                 className="text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider"
                 style={{ background: `${borderColor}25`, color: borderColor }}
               >
-                {currentNode.tipo === 'inicio' ? '🌟 Inicio' : currentNode.tipo === 'yo' ? '👤 Yo' : '💬 Cliente'}
+                {currentNode.tipo === 'inicio' ? (
+                  <span className="inline-flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    Inicio
+                  </span>
+                ) : currentNode.tipo === 'yo' ? (
+                  <span className="inline-flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Yo
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Cliente
+                  </span>
+                )}
               </span>
               {(currentNode.tipo === 'yo' || currentNode.tipo === 'inicio') && (
                 <button
@@ -144,9 +165,15 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                   }}
                 >
                   {copied === currentNode.id ? (
-                    <>✓ Copiado</>
+                    <span className="inline-flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      Copiado
+                    </span>
                   ) : (
-                    <>📋 Copiar</>
+                    <span className="inline-flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      Copiar
+                    </span>
                   )}
                 </button>
               )}
@@ -190,7 +217,22 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                         className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0"
                         style={{ background: `${nc}25`, color: nc }}
                       >
-                        {node.tipo === 'yo' ? '👤 Yo' : node.tipo === 'inicio' ? '🌟 Inicio' : '💬 Cliente'}
+                        {node.tipo === 'yo' ? (
+                          <span className="inline-flex items-center gap-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Yo
+                          </span>
+                        ) : node.tipo === 'inicio' ? (
+                          <span className="inline-flex items-center gap-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            Inicio
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Cliente
+                          </span>
+                        )}
                       </span>
                       <button
                         onClick={(e) => {
@@ -204,7 +246,17 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                           border: `1px solid ${copied === node.id ? '#22c55e40' : `${nc}40`}`,
                         }}
                       >
-                        {copied === node.id ? '✓ Copiado' : '📋 Copiar'}
+                        {copied === node.id ? (
+                          <span className="inline-flex items-center gap-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Copiado
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            Copiar
+                          </span>
+                        )}
                       </button>
                     </div>
 
@@ -230,7 +282,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
 
           {nextNodes.length === 0 && (
             <div className="text-center py-6 text-[#444] text-sm">
-              <div className="text-3xl mb-2">🏁</div>
+              <svg className="mx-auto mb-2" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
               Fin del flujo
             </div>
           )}

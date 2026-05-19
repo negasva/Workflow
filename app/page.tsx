@@ -144,9 +144,11 @@ export default function Home() {
         <div className="px-6 py-3 border-b border-[#222] bg-[#0f0f0f] flex items-center gap-3 min-h-[52px]">
           {selectedKit ? (
             <>
-              <span className="text-lg">
-                {mode === 'venta' ? '💬' : '✏️'}
-              </span>
+              {mode === 'venta' ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              )}
               <h1 className="text-white font-semibold text-sm">{selectedKit.nombre}</h1>
               <span className="text-xs text-[#444] px-2 py-0.5 bg-[#1a1a1a] rounded-full border border-[#2a2a2a]">
                 {mode === 'venta' ? 'Modo Venta' : 'Modo Editor'}
@@ -165,7 +167,10 @@ export default function Home() {
         ) : !selectedKit ? (
           <div className="flex-1 flex items-center justify-center text-[#444]">
             <div className="text-center">
-              <div className="text-5xl mb-4">🖋️</div>
+              <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 4V16C8 17.1046 8.89543 18 10 18L18 18C19.1046 18 20 17.1046 20 16V7.24162C20 6.7034 19.7831 6.18789 19.3982 5.81161L16.0829 2.56999C15.7092 2.2046 15.2074 2 14.6847 2H10C8.89543 2 8 2.89543 8 4Z" stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 18V20C16 21.1046 15.1046 22 14 22H6C4.89543 22 4 21.1046 4 20V9C4 7.89543 4.89543 7 6 7H8" stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
               <p>Selecciona o crea un kit</p>
             </div>
           </div>
