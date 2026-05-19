@@ -13,6 +13,8 @@ export interface Nodo {
   texto: string
   posicion_x: number
   posicion_y: number
+  ancho?: number
+  alto?: number
   created_at: string
 }
 
