@@ -23,4 +23,6 @@ export interface Conexion {
   kit_id: string
   nodo_origen_id: string
   nodo_destino_id: string
+  source_handle?: string | null
+  target_handle?: string | null
 }

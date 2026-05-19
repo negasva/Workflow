@@ -39,8 +39,21 @@ const COLOR_MAP: Record<TipoNodo, string> = {
   cliente: '#F97316',
 }
 
+// 'lt' = left-target, 'ls' = left-source, 'rs' = right-source, 'rt' = right-target
+type HandleId = 'lt' | 'ls' | 'rs' | 'rt'
+
+// Flip handle: 'lt' ↔ 'ls', 'rs' ↔ 'rt' (same side, swap type)
+const flipHandle = (h?: string | null): HandleId => {
+  if (!h) return 'lt'
+  if (h === 'lt') return 'ls'
+  if (h === 'ls') return 'lt'
+  if (h === 'rs') return 'rt'
+  if (h === 'rt') return 'rs'
+  return 'lt'
+}
+
 // ───────────────────────────────────────────────────────────
-// Custom node component with NodeResizer + "+" button
+// Custom node: resize + 4 handles + "+" button (top-right corner)
 // ───────────────────────────────────────────────────────────
 interface TattoNodeData {
   label: string
@@ -55,7 +68,6 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
 
   return (
     <>
-      {/* CORRECCIÓN 1 & 3: NodeResizer with min limits only, no max */}
       <NodeResizer
         isVisible={selected}
         minWidth={150}
@@ -73,7 +85,6 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
         onResize={(_, params) => data.onResize(id, params.width, params.height)}
       />
 
-      {/* Node body */}
       <div
         className="group relative w-full h-full flex items-center"
         style={{
@@ -83,14 +94,35 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
           color: '#f0f0f0',
           fontSize: 13,
           padding: '10px 14px',
+          paddingRight: 32,
           overflow: 'hidden',
           boxSizing: 'border-box',
         }}
       >
+        {/* 4 connection handles per node — bidirectional */}
         <Handle
+          id="lt"
           type="target"
           position={Position.Left}
-          style={{ background: '#555', width: 10, height: 10 }}
+          style={{ top: '35%', background: '#666', width: 10, height: 10 }}
+        />
+        <Handle
+          id="ls"
+          type="source"
+          position={Position.Left}
+          style={{ top: '70%', background: '#888', width: 8, height: 8 }}
+        />
+        <Handle
+          id="rs"
+          type="source"
+          position={Position.Right}
+          style={{ top: '35%', background: '#666', width: 10, height: 10 }}
+        />
+        <Handle
+          id="rt"
+          type="target"
+          position={Position.Right}
+          style={{ top: '70%', background: '#888', width: 8, height: 8 }}
         />
 
         <div
@@ -104,13 +136,7 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
           {data.label}
         </div>
 
-        <Handle
-          type="source"
-          position={Position.Right}
-          style={{ background: '#555', width: 10, height: 10 }}
-        />
-
-        {/* CORRECCIÓN 2: "+" button for click-to-create child node */}
+        {/* "+" button at top-right corner INSIDE the node (no handle overlap) */}
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -118,10 +144,15 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
             e.stopPropagation()
             data.onCreateChild(id)
           }}
-          className={`absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-white text-sm font-bold flex items-center justify-center shadow-lg z-20 transition-opacity ${
+          className={`absolute w-6 h-6 rounded-full text-white text-sm font-bold flex items-center justify-center shadow-lg z-20 transition-opacity ${
             selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
-          style={{ background: color, border: '2px solid #0f0f0f' }}
+          style={{
+            top: 6,
+            right: 6,
+            background: color,
+            border: '1.5px solid rgba(255,255,255,0.25)',
+          }}
           title="Crear nodo hijo"
         >
           +
@@ -142,15 +173,8 @@ function buildRFNode(n: Nodo): Node {
     id: n.id,
     type: 'tatto',
     position: { x: n.posicion_x, y: n.posicion_y },
-    data: {
-      label: n.texto,
-      tipo: n.tipo,
-      color,
-    },
-    style: {
-      width: w,
-      height: h,
-    },
+    data: { label: n.texto, tipo: n.tipo, color },
+    style: { width: w, height: h },
   }
 }
 
@@ -159,8 +183,10 @@ function buildRFEdge(c: Conexion): Edge {
     id: c.id,
     source: c.nodo_origen_id,
     target: c.nodo_destino_id,
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#666' },
-    style: { stroke: '#555', strokeWidth: 2 },
+    sourceHandle: c.source_handle ?? 'rs',
+    targetHandle: c.target_handle ?? 'lt',
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#888' },
+    style: { stroke: '#666', strokeWidth: 2 },
   }
 }
 
@@ -215,7 +241,7 @@ function TextEditor({
 }
 
 // ───────────────────────────────────────────────────────────
-// Node edit panel (without size inputs — resize handled by dragging)
+// Node edit panel
 // ───────────────────────────────────────────────────────────
 interface NodePanelProps {
   nodo: Nodo | null
@@ -335,6 +361,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
 // Main editor
 // ───────────────────────────────────────────────────────────
 type UndoEntry = { id: string; x: number; y: number }
+type EdgeMenu = { x: number; y: number; edgeId: string }
 
 export default function ModoEditor({
   kit,
@@ -347,12 +374,15 @@ export default function ModoEditor({
   const [selectedNodo, setSelectedNodo] = useState<Nodo | null>(null)
   const [nodos, setNodos] = useState<Nodo[]>(initialNodos)
 
-  // Undo history (positions)
+  // Edge floating menu (CAMBIO 3)
+  const [edgeMenu, setEdgeMenu] = useState<EdgeMenu | null>(null)
+
+  // Undo
   const [undoHistory, setUndoHistory] = useState<UndoEntry[]>([])
   const undoHistoryRef = useRef<UndoEntry[]>([])
   useEffect(() => { undoHistoryRef.current = undoHistory }, [undoHistory])
 
-  // Snap to grid
+  // Snap
   const [snapEnabled, setSnapEnabled] = useState(false)
   useEffect(() => {
     const saved = localStorage.getItem('tattoflow-snap')
@@ -367,34 +397,11 @@ export default function ModoEditor({
   }, [])
 
   const dragStartPosRef = useRef<{ id: string; x: number; y: number } | null>(null)
-
-  // CORRECCIÓN 1: debounced resize save (one timer per node)
   const resizeTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
-  // Stable callback refs so we don't have to rebuild all nodes when state changes
   const createChildRef = useRef<(parentId: string) => Promise<void>>(async () => {})
   const resizeRef = useRef<(id: string, w: number, h: number) => void>(() => {})
 
-  // Sync when kit changes — inject stable callbacks into node data
-  useEffect(() => {
-    setNodos(initialNodos)
-    setRfNodes(
-      initialNodos.map((n) => {
-        const rf = buildRFNode(n)
-        rf.data = {
-          ...rf.data,
-          onCreateChild: (pid: string) => createChildRef.current(pid),
-          onResize: (id: string, w: number, h: number) => resizeRef.current(id, w, h),
-        }
-        return rf
-      })
-    )
-    setRfEdges(initialConexiones.map(buildRFEdge))
-    setSelectedNodo(null)
-    setUndoHistory([])
-  }, [kit.id, initialNodos, initialConexiones])
-
-  // Helper: build node with callbacks attached
   const buildNodeWithCallbacks = useCallback((n: Nodo): Node => {
     const rf = buildRFNode(n)
     rf.data = {
@@ -405,14 +412,21 @@ export default function ModoEditor({
     return rf
   }, [])
 
-  // CORRECCIÓN 2: click "+" → create child node + connection
+  useEffect(() => {
+    setNodos(initialNodos)
+    setRfNodes(initialNodos.map(buildNodeWithCallbacks))
+    setRfEdges(initialConexiones.map(buildRFEdge))
+    setSelectedNodo(null)
+    setUndoHistory([])
+    setEdgeMenu(null)
+  }, [kit.id, initialNodos, initialConexiones, buildNodeWithCallbacks])
+
+  // Click "+" → create child node + connection
   useEffect(() => {
     createChildRef.current = async (parentId: string) => {
       const parent = nodos.find((n) => n.id === parentId)
       if (!parent) return
-
-      const oppositeType: TipoNodo =
-        parent.tipo === 'cliente' ? 'yo' : 'cliente'
+      const oppositeType: TipoNodo = parent.tipo === 'cliente' ? 'yo' : 'cliente'
 
       const { data: newNodo, error: nErr } = await supabase
         .from('nodos')
@@ -435,6 +449,8 @@ export default function ModoEditor({
           kit_id: kit.id,
           nodo_origen_id: parentId,
           nodo_destino_id: newNodo.id,
+          source_handle: 'rs',
+          target_handle: 'lt',
         })
         .select()
         .single()
@@ -448,21 +464,15 @@ export default function ModoEditor({
     }
   }, [nodos, kit.id, onDataChange, buildNodeWithCallbacks])
 
-  // CORRECCIÓN 1: resize handler with 600ms debounce per node
+  // Resize with debounce
   useEffect(() => {
     resizeRef.current = (id: string, w: number, h: number) => {
       const width = Math.round(w)
       const height = Math.round(h)
-
-      // Immediate local update (NodeResizer already updates style via RF state,
-      // but we keep our nodos[] in sync for next rebuilds)
       const existing = resizeTimersRef.current.get(id)
       if (existing) clearTimeout(existing)
       const timer = setTimeout(async () => {
-        await supabase
-          .from('nodos')
-          .update({ ancho: width, alto: height })
-          .eq('id', id)
+        await supabase.from('nodos').update({ ancho: width, alto: height }).eq('id', id)
         setNodos((prev) =>
           prev.map((n) => (n.id === id ? { ...n, ancho: width, alto: height } : n))
         )
@@ -472,9 +482,13 @@ export default function ModoEditor({
     }
   }, [])
 
-  // Ctrl+Z undo position
+  // Ctrl+Z undo / Escape closes menu
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setEdgeMenu(null)
+        return
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault()
         const history = undoHistoryRef.current
@@ -531,6 +545,7 @@ export default function ModoEditor({
       .eq('id', node.id)
   }, [])
 
+  // Manual connection (drag from handle) — now stores handle IDs
   const onConnect = useCallback(
     async (connection: Connection) => {
       if (!connection.source || !connection.target) return
@@ -540,6 +555,8 @@ export default function ModoEditor({
           kit_id: kit.id,
           nodo_origen_id: connection.source,
           nodo_destino_id: connection.target,
+          source_handle: connection.sourceHandle,
+          target_handle: connection.targetHandle,
         })
         .select()
         .single()
@@ -549,8 +566,8 @@ export default function ModoEditor({
             {
               ...connection,
               id: data.id,
-              markerEnd: { type: MarkerType.ArrowClosed, color: '#666' },
-              style: { stroke: '#555', strokeWidth: 2 },
+              markerEnd: { type: MarkerType.ArrowClosed, color: '#888' },
+              style: { stroke: '#666', strokeWidth: 2 },
             },
             eds
           )
@@ -560,17 +577,65 @@ export default function ModoEditor({
     [kit.id]
   )
 
-  const onEdgeClick = useCallback(async (_: React.MouseEvent, edge: Edge) => {
-    const confirmed = window.confirm('¿Eliminar esta conexión?')
-    if (!confirmed) return
-    await supabase.from('conexiones').delete().eq('id', edge.id)
-    setRfEdges((eds) => eds.filter((e) => e.id !== edge.id))
+  // CAMBIO 3: edge click → floating menu
+  const onEdgeClick = useCallback((e: React.MouseEvent, edge: Edge) => {
+    e.stopPropagation()
+    setEdgeMenu({ x: e.clientX, y: e.clientY, edgeId: edge.id })
   }, [])
+
+  const onPaneClick = useCallback(() => {
+    setEdgeMenu(null)
+  }, [])
+
+  // CAMBIO 3: flip edge direction (swap source/target + flip handles)
+  const handleFlipEdge = useCallback(async () => {
+    if (!edgeMenu) return
+    const edge = rfEdges.find((e) => e.id === edgeMenu.edgeId)
+    if (!edge) return
+
+    const newSource = edge.target
+    const newTarget = edge.source
+    const newSourceHandle = flipHandle(edge.targetHandle as string | null | undefined)
+    const newTargetHandle = flipHandle(edge.sourceHandle as string | null | undefined)
+
+    await supabase
+      .from('conexiones')
+      .update({
+        nodo_origen_id: newSource,
+        nodo_destino_id: newTarget,
+        source_handle: newSourceHandle,
+        target_handle: newTargetHandle,
+      })
+      .eq('id', edge.id)
+
+    setRfEdges((eds) =>
+      eds.map((e) =>
+        e.id === edge.id
+          ? {
+              ...e,
+              source: newSource,
+              target: newTarget,
+              sourceHandle: newSourceHandle,
+              targetHandle: newTargetHandle,
+            }
+          : e
+      )
+    )
+    setEdgeMenu(null)
+  }, [edgeMenu, rfEdges])
+
+  const handleDeleteEdge = useCallback(async () => {
+    if (!edgeMenu) return
+    await supabase.from('conexiones').delete().eq('id', edgeMenu.edgeId)
+    setRfEdges((eds) => eds.filter((e) => e.id !== edgeMenu.edgeId))
+    setEdgeMenu(null)
+  }, [edgeMenu])
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_, node) => {
       const nodo = nodos.find((n) => n.id === node.id)
       setSelectedNodo(nodo ?? null)
+      setEdgeMenu(null)
     },
     [nodos]
   )
@@ -640,6 +705,7 @@ export default function ModoEditor({
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
+        onPaneClick={onPaneClick}
         onNodeDragStart={onNodeDragStart}
         onNodeDragStop={onNodeDragStop}
         fitView
@@ -659,11 +725,11 @@ export default function ModoEditor({
         <Panel position="top-left">
           <div className="flex items-start gap-2">
             <div className="bg-[#111]/80 backdrop-blur border border-[#222] rounded-xl px-4 py-2 text-xs text-[#666] space-y-1">
-              <p>• Hover/seleccionar nodo → click <span className="text-white">+</span> crea hijo</p>
-              <p>• Arrastra desde el handle derecho → conecta manual</p>
-              <p>• Arrastra bordes del nodo seleccionado → redimensiona</p>
-              <p>• Clic en flecha → elimina conexión</p>
-              <p>• Ctrl+Z → deshacer movimiento</p>
+              <p>• Botón <span className="text-white">+</span> (esquina sup. der.) → crea nodo hijo</p>
+              <p>• Arrastra desde cualquier handle → conexión manual</p>
+              <p>• 4 handles por nodo: dos a cada lado (entrada/salida)</p>
+              <p>• Clic en flecha → menú (invertir / eliminar)</p>
+              <p>• Arrastra bordes seleccionados → redimensiona · Ctrl+Z deshace</p>
             </div>
             <button
               onClick={toggleSnap}
@@ -690,6 +756,31 @@ export default function ModoEditor({
           </button>
         </Panel>
       </ReactFlow>
+
+      {/* CAMBIO 3: floating edge menu */}
+      {edgeMenu && (
+        <div
+          className="fixed bg-[#0f0f0f] border border-[#333] rounded-xl shadow-2xl z-50 flex gap-1 p-1"
+          style={{
+            left: Math.min(edgeMenu.x, window.innerWidth - 230),
+            top: Math.min(edgeMenu.y, window.innerHeight - 50),
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={handleFlipEdge}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#3B82F6] hover:bg-[#3B82F620] transition-colors"
+          >
+            ↔ Invertir dirección
+          </button>
+          <button
+            onClick={handleDeleteEdge}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/20 transition-colors"
+          >
+            🗑️ Eliminar
+          </button>
+        </div>
+      )}
 
       <NodePanel
         nodo={selectedNodo}
