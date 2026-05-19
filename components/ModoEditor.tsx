@@ -83,31 +83,32 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
       <div
         className="group relative w-full h-full flex items-center"
         style={{
-          background: 'var(--bg-surface)',
-          border: `1.5px solid ${color}80`,
-          borderRadius: 12,
-          color: 'var(--text-primary)',
+          background: color,
+          border: 'none',
+          borderRadius: 'var(--radius-node)',
+          color: '#ffffff',
           fontSize: 13,
+          fontFamily: 'Recoleta, system-ui, sans-serif',
+          fontWeight: 500,
           padding: '10px 14px',
           paddingRight: 32,
           overflow: 'hidden',
           boxSizing: 'border-box',
-          boxShadow: `inset 4px 0 0 ${color}, var(--shadow-card)`,
+          boxShadow: selected
+            ? `0 0 0 3px rgba(255,255,255,0.6), var(--shadow-node)`
+            : 'var(--shadow-node)',
         }}
       >
-        {/* 2 source handles + connectionMode loose = unlimited any-direction.
-            Offset to top:30% so they don't overlap NodeResizer's middle-edge
-            handles (which sit at 50%). Bigger size = easier to grab. */}
         <Handle
           id="left"
           type="source"
           position={Position.Left}
           style={{
             top: '30%',
-            background: color,
+            background: 'rgba(255,255,255,0.35)',
             width: 14,
             height: 14,
-            border: '2px solid var(--bg-surface)',
+            border: '2.5px solid rgba(255,255,255,0.7)',
             zIndex: 10,
           }}
         />
@@ -117,10 +118,10 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
           position={Position.Right}
           style={{
             top: '30%',
-            background: color,
+            background: 'rgba(255,255,255,0.35)',
             width: 14,
             height: 14,
-            border: '2px solid var(--bg-surface)',
+            border: '2.5px solid rgba(255,255,255,0.7)',
             zIndex: 10,
           }}
         />
@@ -131,12 +132,13 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
             wordBreak: 'break-word',
             whiteSpace: 'pre-wrap',
             overflow: 'hidden',
+            textShadow: '0 1px 2px rgba(0,0,0,0.15)',
           }}
         >
           {data.label}
         </div>
 
-        {/* "+" button at top-right corner INSIDE the node (no handle overlap) */}
+        {/* "+" button */}
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -144,14 +146,15 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
             e.stopPropagation()
             data.onCreateChild(id)
           }}
-          className={`absolute w-6 h-6 rounded-full text-white text-sm font-bold flex items-center justify-center shadow-lg z-20 transition-opacity ${
+          className={`absolute w-6 h-6 rounded-full text-white text-sm font-bold flex items-center justify-center z-20 transition-all ${
             selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
           style={{
             top: 6,
             right: 6,
-            background: color,
-            border: '1.5px solid rgba(255,255,255,0.25)',
+            background: 'rgba(255,255,255,0.25)',
+            border: '1.5px solid rgba(255,255,255,0.5)',
+            backdropFilter: 'blur(4px)',
           }}
           title="Crear nodo hijo"
         >
@@ -287,7 +290,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
   }
 
   return (
-    <div className="absolute right-0 top-0 h-full w-80 border-l border-app-border flex flex-col z-10 shadow-pop" style={{ background: 'var(--bg-surface)' }}>
+    <div className="absolute right-0 top-0 h-full w-80 border-l border-app-border flex flex-col z-10 shadow-drop" style={{ background: 'var(--bg-surface)' }}>
       <div className="flex items-center justify-between px-5 py-4 border-b border-app-border">
         <h3 className="text-app-text font-semibold text-sm">Editar nodo</h3>
         <button onClick={onClose} className="text-app-muted hover:text-app-text transition-colors p-1">
@@ -307,12 +310,13 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
                 <button
                   key={t}
                   onClick={() => setTipo(t)}
-                  className="py-2 rounded-lg text-xs font-semibold transition-all capitalize"
-                  style={
-                    tipo === t
-                      ? { background: `${c}1F`, color: c, border: `1.5px solid ${c}80` }
-                      : { background: 'var(--bg-surface-2)', color: 'var(--text-muted)', border: '1.5px solid var(--border)' }
-                  }
+                  className="py-2 text-xs font-semibold transition-all capitalize"
+                  style={{
+                    borderRadius: 'var(--radius-btn)',
+                    ...(tipo === t
+                      ? { background: c, color: '#fff', border: 'none', boxShadow: 'var(--shadow-drop)' }
+                      : { background: 'var(--bg-surface-2)', color: 'var(--text-muted)', border: '1.5px solid var(--border)' }),
+                  }}
                 >
                   <span className="inline-flex items-center gap-1">
                     {t === 'inicio' ? (
@@ -348,7 +352,8 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors shadow-soft"
+          className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white py-2.5 text-sm font-semibold transition-all shadow-drop hover:shadow-node"
+          style={{ borderRadius: 'var(--radius-btn)' }}
         >
           {saving ? 'Guardando...' : (
             <span className="inline-flex items-center gap-1.5">
@@ -360,11 +365,12 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className={`w-full rounded-xl py-2.5 text-sm font-semibold transition-colors border ${
+          className={`w-full py-2.5 text-sm font-semibold transition-all ${
             confirmDelete
-              ? 'bg-red-600 hover:bg-red-500 text-white border-red-600'
-              : 'bg-app-surface-2 hover:bg-app-border text-app-muted hover:text-red-500 border-app-border'
+              ? 'bg-red-600 hover:bg-red-500 text-white shadow-drop'
+              : 'bg-app-surface-2 hover:bg-app-border text-app-muted hover:text-red-500 border border-app-border'
           }`}
+          style={{ borderRadius: 'var(--radius-btn)' }}
         >
           {deleting ? 'Eliminando...' : confirmDelete ? (
             <span className="inline-flex items-center gap-1.5">
@@ -381,7 +387,8 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
         {confirmDelete && (
           <button
             onClick={() => setConfirmDelete(false)}
-            className="w-full bg-app-surface-2 hover:bg-app-border text-app-muted rounded-xl py-2 text-xs transition-colors border border-app-border"
+            className="w-full bg-app-surface-2 hover:bg-app-border text-app-muted py-2 text-xs transition-colors border border-app-border"
+            style={{ borderRadius: 'var(--radius-btn)' }}
           >
             Cancelar
           </button>
@@ -826,7 +833,8 @@ export default function ModoEditor({
         <Panel position="bottom-right">
           <button
             onClick={handleAddNodo}
-            className="w-12 h-12 bg-brand hover:bg-brand-hover text-white rounded-full shadow-pop text-2xl flex items-center justify-center transition-all hover:scale-105"
+            className="w-14 h-14 bg-brand hover:bg-brand-hover text-white rounded-full text-2xl flex items-center justify-center transition-all hover:scale-105 hover:shadow-node"
+            style={{ boxShadow: 'var(--shadow-drop)' }}
             title="Agregar nodo"
           >
             +
@@ -837,8 +845,10 @@ export default function ModoEditor({
       {/* CAMBIO 3: floating edge menu */}
       {edgeMenu && (
         <div
-          className="fixed border rounded-xl shadow-pop z-50 flex gap-1 p-1"
+          className="fixed border z-50 flex gap-1 p-1"
           style={{
+            borderRadius: 'var(--radius-btn)',
+            boxShadow: 'var(--shadow-drop)',
             background: 'var(--bg-surface)',
             borderColor: 'var(--border)',
             left: Math.min(edgeMenu.x, window.innerWidth - 230),

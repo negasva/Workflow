@@ -61,8 +61,8 @@ export default function SearchModal({ open, nodos, onClose, onSelect }: SearchMo
   return (
     <div className="fixed inset-0 z-[100] modal-backdrop flex items-start justify-center pt-24 px-4" onClick={onClose}>
       <div
-        className="w-full max-w-xl card shadow-pop overflow-hidden"
-        style={{ background: 'var(--bg-surface)' }}
+        className="w-full max-w-xl overflow-hidden border border-app-border"
+        style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-drop)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-app-border">

@@ -31,12 +31,12 @@ export default function ShortcutsModal({ open, onClose }: ShortcutsModalProps) {
   return (
     <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center px-4" onClick={onClose}>
       <div
-        className="w-full max-w-md card shadow-pop overflow-hidden"
-        style={{ background: 'var(--bg-surface)' }}
+        className="w-full max-w-md overflow-hidden border border-app-border"
+        style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-drop)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-app-border">
-          <h2 className="text-app-text font-semibold">Atajos de teclado</h2>
+          <h2 className="font-title text-app-text font-semibold">Atajos de teclado</h2>
           <button onClick={onClose} className="text-app-muted hover:text-app-text">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>

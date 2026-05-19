@@ -10,7 +10,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        title: ['Berthold', 'Recoleta', 'system-ui', 'sans-serif'],
+        sans: ['Recoleta', 'system-ui', 'sans-serif'],
+        recoleta: ['Recoleta', 'system-ui', 'sans-serif'],
       },
       colors: {
         brand: {
@@ -23,20 +25,21 @@ const config: Config = {
           yo: '#3B82F6',
           cliente: '#10B981',
         },
-        app: {
-          bg: 'var(--bg-app)',
-          surface: 'var(--bg-surface)',
-          'surface-2': 'var(--bg-surface-2)',
-          border: 'var(--border)',
-          'border-strong': 'var(--border-strong)',
-          text: 'var(--text-primary)',
-          muted: 'var(--text-muted)',
-        },
+      },
+      borderRadius: {
+        node: '18px',
+        card: '16px',
+        btn: '12px',
+        xl: '16px',
+        '2xl': '20px',
+        '3xl': '24px',
       },
       boxShadow: {
         soft: '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06)',
-        card: '0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 4px -1px rgb(0 0 0 / 0.04)',
-        pop: '0 12px 32px -8px rgb(0 0 0 / 0.18), 0 4px 8px -2px rgb(0 0 0 / 0.08)',
+        card: 'var(--shadow-card)',
+        drop: 'var(--shadow-drop)',
+        node: 'var(--shadow-node)',
+        pop: '0 20px 48px -8px rgb(0 0 0 / 0.22), 0 8px 16px -4px rgb(0 0 0 / 0.10)',
       },
     },
   },

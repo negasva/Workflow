@@ -220,7 +220,7 @@ export default function Home() {
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               </button>
-              <h1 className="text-app-text font-semibold text-sm">{selectedKit.nombre}</h1>
+              <h1 className="font-title text-app-text font-semibold text-sm">{selectedKit.nombre}</h1>
               <span
                 className="text-xs px-2.5 py-0.5 rounded-full border font-medium"
                 style={{
@@ -231,20 +231,22 @@ export default function Home() {
               >
                 {mode === 'venta' ? 'Modo Venta' : 'Modo Editor'}
               </span>
-              <div className="ml-auto flex items-center bg-app-surface-2 border border-app-border rounded-lg p-0.5 text-xs font-medium">
+              <div className="ml-auto flex items-center bg-app-surface-2 border border-app-border p-0.5 text-xs font-medium" style={{ borderRadius: 'var(--radius-btn)' }}>
                 <button
                   onClick={() => setMode('venta')}
-                  className={`px-3 py-1 rounded-md transition-all ${
-                    mode === 'venta' ? 'bg-brand text-white shadow-soft' : 'text-app-muted hover:text-app-text'
+                  className={`px-3 py-1 transition-all ${
+                    mode === 'venta' ? 'bg-brand text-white shadow-drop' : 'text-app-muted hover:text-app-text'
                   }`}
+                  style={{ borderRadius: 'calc(var(--radius-btn) - 2px)' }}
                 >
                   Venta
                 </button>
                 <button
                   onClick={() => setMode('editor')}
-                  className={`px-3 py-1 rounded-md transition-all ${
-                    mode === 'editor' ? 'bg-brand text-white shadow-soft' : 'text-app-muted hover:text-app-text'
+                  className={`px-3 py-1 transition-all ${
+                    mode === 'editor' ? 'bg-brand text-white shadow-drop' : 'text-app-muted hover:text-app-text'
                   }`}
+                  style={{ borderRadius: 'calc(var(--radius-btn) - 2px)' }}
                 >
                   Editor
                 </button>
@@ -270,7 +272,8 @@ export default function Home() {
               <p>Selecciona o crea un kit</p>
               <button
                 onClick={handleAddKit}
-                className="mt-4 inline-flex items-center gap-2 bg-brand hover:bg-brand-hover text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors shadow-soft"
+                className="mt-4 inline-flex items-center gap-2 bg-brand hover:bg-brand-hover text-white px-4 py-2 text-sm font-semibold transition-all shadow-drop hover:shadow-node"
+                style={{ borderRadius: 'var(--radius-btn)' }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Crear primer kit

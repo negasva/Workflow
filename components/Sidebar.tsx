@@ -58,7 +58,7 @@ export default function Sidebar({
         {/* Header */}
         <div className="px-5 py-4 border-b border-app-border">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-app-text">Kits</h2>
+            <h2 className="font-title font-semibold text-app-text">Kits</h2>
             <span className="text-xs text-app-muted">{kits.length}</span>
           </div>
         </div>
@@ -70,11 +70,12 @@ export default function Sidebar({
               <div
                 key={kit.id}
                 onClick={() => onSelectKit(kit.id)}
-                className={`group flex items-center justify-between rounded-xl px-3 py-2.5 cursor-pointer transition-all border ${
+                className={`group flex items-center justify-between px-3 py-2.5 cursor-pointer transition-all border ${
                   selectedKitId === kit.id
-                    ? 'bg-brand/10 border-brand/30 text-app-text'
+                    ? 'bg-brand text-white border-transparent shadow-drop'
                     : 'text-app-text border-transparent hover:bg-app-surface-2 hover:border-app-border'
                 }`}
+                style={{ borderRadius: 'var(--radius-btn)' }}
               >
                 {editingId === kit.id ? (
                   <input
@@ -94,7 +95,7 @@ export default function Sidebar({
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <span
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          selectedKitId === kit.id ? 'bg-brand' : 'bg-app-muted'
+                          selectedKitId === kit.id ? 'bg-white' : 'bg-app-muted'
                         }`}
                       />
                       <span className="text-sm font-medium truncate">{kit.nombre}</span>
@@ -135,7 +136,8 @@ export default function Sidebar({
         <div className="p-3 border-t border-app-border">
           <button
             onClick={onAddKit}
-            className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-white rounded-xl py-2.5 text-sm font-semibold transition-colors shadow-soft"
+            className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-white py-2.5 text-sm font-semibold transition-all shadow-drop hover:shadow-node"
+            style={{ borderRadius: 'var(--radius-btn)' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nuevo kit
@@ -146,21 +148,23 @@ export default function Sidebar({
       {/* Delete confirm modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[100]">
-          <div className="card shadow-pop p-6 max-w-sm w-full mx-4" style={{ background: 'var(--bg-surface)' }}>
-            <h3 className="text-app-text font-semibold text-lg mb-2">¿Eliminar kit?</h3>
+          <div className="shadow-pop p-6 max-w-sm w-full mx-4 border border-app-border" style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-card)' }}>
+            <h3 className="font-title text-app-text font-semibold text-lg mb-2">¿Eliminar kit?</h3>
             <p className="text-app-muted text-sm mb-5">
               Se eliminará el kit y todos sus nodos y conexiones. Esta acción no se puede deshacer.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 bg-app-surface-2 hover:bg-app-border text-app-text border border-app-border rounded-xl py-2.5 text-sm font-medium transition-colors"
+                className="flex-1 bg-app-surface-2 hover:bg-app-border text-app-text border border-app-border py-2.5 text-sm font-medium transition-colors"
+                style={{ borderRadius: 'var(--radius-btn)' }}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="flex-1 bg-red-600 hover:bg-red-500 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2.5 text-sm font-medium transition-all shadow-drop"
+                style={{ borderRadius: 'var(--radius-btn)' }}
               >
                 Eliminar
               </button>

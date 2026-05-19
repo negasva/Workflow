@@ -144,12 +144,12 @@ export default function ExportImportModal({
   return (
     <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center px-4" onClick={onClose}>
       <div
-        className="w-full max-w-md card shadow-pop overflow-hidden"
-        style={{ background: 'var(--bg-surface)' }}
+        className="w-full max-w-md overflow-hidden border border-app-border"
+        style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-drop)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-app-border">
-          <h2 className="text-app-text font-semibold">Exportar / Importar kit</h2>
+          <h2 className="font-title text-app-text font-semibold">Exportar / Importar kit</h2>
           <button onClick={onClose} className="text-app-muted hover:text-app-text">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
@@ -160,7 +160,8 @@ export default function ExportImportModal({
             <button
               onClick={handleExport}
               disabled={!kit || busy}
-              className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover disabled:opacity-50 text-white py-2.5 text-sm font-semibold transition-all shadow-drop"
+              style={{ borderRadius: 'var(--radius-btn)' }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Descargar JSON
@@ -181,7 +182,8 @@ export default function ExportImportModal({
             <button
               onClick={() => fileRef.current?.click()}
               disabled={busy}
-              className="w-full flex items-center justify-center gap-2 bg-app-surface-2 hover:bg-app-border text-app-text rounded-xl py-2.5 text-sm font-semibold border border-app-border transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-app-surface-2 hover:bg-app-border text-app-text py-2.5 text-sm font-semibold border border-app-border transition-colors disabled:opacity-50"
+              style={{ borderRadius: 'var(--radius-btn)' }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               {busy ? 'Importando...' : 'Seleccionar archivo'}
