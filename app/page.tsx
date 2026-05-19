@@ -2,14 +2,20 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Kit, Nodo, Conexion } from '@/types'
 import Sidebar from '@/components/Sidebar'
 import ModoVenta from '@/components/ModoVenta'
+import IconNav from '@/components/IconNav'
+import SearchModal from '@/components/SearchModal'
+import ShortcutsModal from '@/components/ShortcutsModal'
+import ExportImportModal from '@/components/ExportImportModal'
 import dynamicImport from 'next/dynamic'
 
 const ModoEditor = dynamicImport(() => import('@/components/ModoEditor'), { ssr: false })
+
+type Theme = 'light' | 'dark'
 
 export default function Home() {
   const [kits, setKits] = useState<Kit[]>([])
@@ -20,7 +26,32 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [kitLoading, setKitLoading] = useState(false)
 
+  const [theme, setTheme] = useState<Theme>('light')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
+
   const selectedKit = kits.find((k) => k.id === selectedKitId)
+
+  // Theme: read from localStorage / system on mount, persist on change
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('copyflow-theme') as Theme | null
+      const initial: Theme = stored ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      setTheme(initial)
+      document.documentElement.classList.toggle('dark', initial === 'dark')
+    } catch { /* ignore */ }
+  }, [])
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme((t) => {
+      const next: Theme = t === 'dark' ? 'light' : 'dark'
+      document.documentElement.classList.toggle('dark', next === 'dark')
+      try { localStorage.setItem('copyflow-theme', next) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
 
   // Load all kits
   const loadKits = useCallback(async () => {
@@ -30,18 +61,19 @@ export default function Home() {
       .order('created_at', { ascending: true })
     if (data) {
       setKits(data)
-      if (!selectedKitId && data.length > 0) {
+      if (!selectedKitIdRef.current && data.length > 0) {
         setSelectedKitId(data[0].id)
       }
     }
     setLoading(false)
-  }, [selectedKitId])
+  }, [])
+  const selectedKitIdRef = useRef(selectedKitId)
+  useEffect(() => { selectedKitIdRef.current = selectedKitId }, [selectedKitId])
 
   useEffect(() => {
     loadKits()
-  }, [])
+  }, [loadKits])
 
-  // Load kit data when selection changes
   const loadKitData = useCallback(async (kitId: string) => {
     setKitLoading(true)
     const [nodosRes, conexionesRes] = await Promise.all([
@@ -54,17 +86,12 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (selectedKitId) {
-      loadKitData(selectedKitId)
-    }
+    if (selectedKitId) loadKitData(selectedKitId)
   }, [selectedKitId, loadKitData])
 
   const handleSelectKit = useCallback((id: string) => {
     setSelectedKitId(id)
-  }, [])
-
-  const handleToggleMode = useCallback(() => {
-    setMode((m) => (m === 'venta' ? 'editor' : 'venta'))
+    setSidebarOpen(true)
   }, [])
 
   const handleAddKit = useCallback(async () => {
@@ -86,6 +113,7 @@ export default function Home() {
 
     await loadKits()
     setSelectedKitId(kitData.id)
+    setSidebarOpen(true)
   }, [kits.length, loadKits])
 
   const handleDeleteKit = useCallback(
@@ -112,66 +140,141 @@ export default function Home() {
     if (selectedKitId) loadKitData(selectedKitId)
   }, [selectedKitId, loadKitData])
 
+  // Global hotkeys: Ctrl+K (search), ? (shortcuts)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable
+      if (e.key === '?' && !isTyping) {
+        e.preventDefault()
+        setShortcutsOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const handleSearchSelect = useCallback((nodoId: string) => {
+    setMode('editor')
+    // ModoEditor's fitView will show the canvas; user clicks node to focus.
+    // We could highlight further but keep it simple for now.
+    void nodoId
+  }, [])
+
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#0f0f0f]">
+      <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
         <div className="text-center space-y-3">
-          <svg className="animate-pulse mx-auto" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 4V16C8 17.1046 8.89543 18 10 18L18 18C19.1046 18 20 17.1046 20 16V7.24162C20 6.7034 19.7831 6.18789 19.3982 5.81161L16.0829 2.56999C15.7092 2.2046 15.2074 2 14.6847 2H10C8.89543 2 8 2.89543 8 4Z" stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 18V20C16 21.1046 15.1046 22 14 22H6C4.89543 22 4 21.1046 4 20V9C4 7.89543 4.89543 7 6 7H8" stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          <p className="text-[#555] text-sm">Cargando CopyFlow...</p>
+          <svg className="animate-pulse mx-auto" width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M8 4V16C8 17.1046 8.89543 18 10 18L18 18C19.1046 18 20 17.1046 20 16V7.24162C20 6.7034 19.7831 6.18789 19.3982 5.81161L16.0829 2.56999C15.7092 2.2046 15.2074 2 14.6847 2H10C8.89543 2 8 2.89543 8 4Z" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 18V20C16 21.1046 15.1046 22 14 22H6C4.89543 22 4 21.1046 4 20V9C4 7.89543 4.89543 7 6 7H8" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <p className="text-app-muted text-sm">Cargando CopyFlow...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      <Sidebar
-        kits={kits}
-        selectedKitId={selectedKitId}
+    <div className="h-screen flex overflow-hidden" style={{ background: 'var(--bg-app)' }}>
+      <IconNav
         mode={mode}
-        onSelectKit={handleSelectKit}
-        onToggleMode={handleToggleMode}
+        theme={theme}
+        onSetMode={setMode}
         onAddKit={handleAddKit}
-        onDeleteKit={handleDeleteKit}
-        onRenameKit={handleRenameKit}
+        onToggleTheme={handleToggleTheme}
+        onOpenSearch={() => setSearchOpen(true)}
+        onOpenExport={() => setExportOpen(true)}
+        onOpenShortcuts={() => setShortcutsOpen(true)}
+        onFocusKits={() => setSidebarOpen((s) => !s)}
       />
+
+      {sidebarOpen && (
+        <Sidebar
+          kits={kits}
+          selectedKitId={selectedKitId}
+          onSelectKit={handleSelectKit}
+          onAddKit={handleAddKit}
+          onDeleteKit={handleDeleteKit}
+          onRenameKit={handleRenameKit}
+        />
+      )}
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {/* Kit header */}
-        <div className="px-6 py-3 border-b border-[#222] bg-[#0f0f0f] flex items-center gap-3 min-h-[52px]">
+        <div
+          className="px-6 py-3 border-b flex items-center gap-3 min-h-[56px]"
+          style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+        >
           {selectedKit ? (
             <>
-              {mode === 'venta' ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              )}
-              <h1 className="text-white font-semibold text-sm">{selectedKit.nombre}</h1>
-              <span className="text-xs text-[#444] px-2 py-0.5 bg-[#1a1a1a] rounded-full border border-[#2a2a2a]">
+              <button
+                onClick={() => setSidebarOpen((s) => !s)}
+                className="text-app-muted hover:text-app-text transition-colors p-1 -ml-1"
+                title={sidebarOpen ? 'Ocultar kits' : 'Mostrar kits'}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              </button>
+              <h1 className="text-app-text font-semibold text-sm">{selectedKit.nombre}</h1>
+              <span
+                className="text-xs px-2.5 py-0.5 rounded-full border font-medium"
+                style={{
+                  background: mode === 'venta' ? '#10B98115' : '#3B82F615',
+                  color: mode === 'venta' ? '#10B981' : '#3B82F6',
+                  borderColor: mode === 'venta' ? '#10B98140' : '#3B82F640',
+                }}
+              >
                 {mode === 'venta' ? 'Modo Venta' : 'Modo Editor'}
               </span>
+              <div className="ml-auto flex items-center bg-app-surface-2 border border-app-border rounded-lg p-0.5 text-xs font-medium">
+                <button
+                  onClick={() => setMode('venta')}
+                  className={`px-3 py-1 rounded-md transition-all ${
+                    mode === 'venta' ? 'bg-brand text-white shadow-soft' : 'text-app-muted hover:text-app-text'
+                  }`}
+                >
+                  Venta
+                </button>
+                <button
+                  onClick={() => setMode('editor')}
+                  className={`px-3 py-1 rounded-md transition-all ${
+                    mode === 'editor' ? 'bg-brand text-white shadow-soft' : 'text-app-muted hover:text-app-text'
+                  }`}
+                >
+                  Editor
+                </button>
+              </div>
             </>
           ) : (
-            <span className="text-[#444] text-sm">Selecciona un kit</span>
+            <span className="text-app-muted text-sm">Selecciona un kit</span>
           )}
         </div>
 
         {/* Content */}
         {kitLoading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-[#555] text-sm animate-pulse">Cargando kit...</div>
+            <div className="text-app-muted text-sm animate-pulse">Cargando kit...</div>
           </div>
         ) : !selectedKit ? (
-          <div className="flex-1 flex items-center justify-center text-[#444]">
+          <div className="flex-1 flex items-center justify-center text-app-muted">
             <div className="text-center">
-              <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8 4V16C8 17.1046 8.89543 18 10 18L18 18C19.1046 18 20 17.1046 20 16V7.24162C20 6.7034 19.7831 6.18789 19.3982 5.81161L16.0829 2.56999C15.7092 2.2046 15.2074 2 14.6847 2H10C8.89543 2 8 2.89543 8 4Z" stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 18V20C16 21.1046 15.1046 22 14 22H6C4.89543 22 4 21.1046 4 20V9C4 7.89543 4.89543 7 6 7H8" stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none">
+                <path d="M8 4V16C8 17.1046 8.89543 18 10 18L18 18C19.1046 18 20 17.1046 20 16V7.24162C20 6.7034 19.7831 6.18789 19.3982 5.81161L16.0829 2.56999C15.7092 2.2046 15.2074 2 14.6847 2H10C8.89543 2 8 2.89543 8 4Z" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 18V20C16 21.1046 15.1046 22 14 22H6C4.89543 22 4 21.1046 4 20V9C4 7.89543 4.89543 7 6 7H8" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <p>Selecciona o crea un kit</p>
+              <button
+                onClick={handleAddKit}
+                className="mt-4 inline-flex items-center gap-2 bg-brand hover:bg-brand-hover text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors shadow-soft"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Crear primer kit
+              </button>
             </div>
           </div>
         ) : mode === 'venta' ? (
@@ -186,6 +289,22 @@ export default function Home() {
           />
         )}
       </main>
+
+      <SearchModal
+        open={searchOpen}
+        nodos={nodos}
+        onClose={() => setSearchOpen(false)}
+        onSelect={handleSearchSelect}
+      />
+      <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <ExportImportModal
+        open={exportOpen}
+        kit={selectedKit ?? null}
+        nodos={nodos}
+        conexiones={conexiones}
+        onClose={() => setExportOpen(false)}
+        onImported={() => { setExportOpen(false); loadKits() }}
+      />
     </div>
   )
 }

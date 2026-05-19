@@ -35,9 +35,9 @@ interface ModoEditorProps {
 }
 
 const COLOR_MAP: Record<TipoNodo, string> = {
-  inicio: '#EC4899',
+  inicio: '#8B5CF6',
   yo: '#3B82F6',
-  cliente: '#F97316',
+  cliente: '#10B981',
 }
 
 // Flip handle: left ↔ right (keeps the same side logic but reverses direction)
@@ -83,15 +83,16 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
       <div
         className="group relative w-full h-full flex items-center"
         style={{
-          background: `${color}18`,
-          border: `1.5px solid ${color}70`,
+          background: 'var(--bg-surface)',
+          border: `1.5px solid ${color}80`,
           borderRadius: 12,
-          color: '#f0f0f0',
+          color: 'var(--text-primary)',
           fontSize: 13,
           padding: '10px 14px',
           paddingRight: 32,
           overflow: 'hidden',
           boxSizing: 'border-box',
+          boxShadow: `inset 4px 0 0 ${color}, var(--shadow-card)`,
         }}
       >
         {/* 2 source handles + connectionMode loose = unlimited any-direction.
@@ -106,7 +107,7 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
             background: color,
             width: 14,
             height: 14,
-            border: '2px solid #0f0f0f',
+            border: '2px solid var(--bg-surface)',
             zIndex: 10,
           }}
         />
@@ -119,7 +120,7 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
             background: color,
             width: 14,
             height: 14,
-            border: '2px solid #0f0f0f',
+            border: '2px solid var(--bg-surface)',
             zIndex: 10,
           }}
         />
@@ -191,8 +192,8 @@ function buildRFEdge(c: Conexion): Edge {
     target: c.nodo_destino_id,
     sourceHandle: mapH(c.source_handle, 'right'),
     targetHandle: mapH(c.target_handle, 'left'),
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#888' },
-    style: { stroke: '#666', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--rf-edge)' },
+    style: { strokeWidth: 2 },
   }
 }
 
@@ -241,7 +242,7 @@ function TextEditor({
       suppressContentEditableWarning
       onInput={() => ref.current && onChange(ref.current.innerText)}
       onPaste={handlePaste}
-      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-3 py-3 text-sm text-[#f0f0f0] outline-none focus:border-[#3a3a3a] leading-relaxed font-mono min-h-[200px] whitespace-pre-wrap break-words"
+      className="w-full bg-app-surface-2 border border-app-border rounded-xl px-3 py-3 text-sm text-app-text outline-none focus:border-brand leading-relaxed font-mono min-h-[200px] whitespace-pre-wrap break-words"
     />
   )
 }
@@ -286,10 +287,10 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
   }
 
   return (
-    <div className="absolute right-0 top-0 h-full w-80 bg-[#111] border-l border-[#222] flex flex-col z-10 shadow-2xl">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[#222]">
-        <h3 className="text-white font-semibold text-sm">Editar nodo</h3>
-        <button onClick={onClose} className="text-[#666] hover:text-white transition-colors p-1">
+    <div className="absolute right-0 top-0 h-full w-80 border-l border-app-border flex flex-col z-10 shadow-pop" style={{ background: 'var(--bg-surface)' }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-app-border">
+        <h3 className="text-app-text font-semibold text-sm">Editar nodo</h3>
+        <button onClick={onClose} className="text-app-muted hover:text-app-text transition-colors p-1">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -298,7 +299,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
         <div>
-          <label className="block text-xs text-[#888] uppercase tracking-wider mb-2 font-semibold">Tipo</label>
+          <label className="block text-xs text-app-muted uppercase tracking-wider mb-2 font-semibold">Tipo</label>
           <div className="grid grid-cols-3 gap-1.5">
             {(['inicio', 'yo', 'cliente'] as TipoNodo[]).map((t) => {
               const c = COLOR_MAP[t]
@@ -309,8 +310,8 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
                   className="py-2 rounded-lg text-xs font-semibold transition-all capitalize"
                   style={
                     tipo === t
-                      ? { background: `${c}30`, color: c, border: `1.5px solid ${c}60` }
-                      : { background: '#1a1a1a', color: '#666', border: '1.5px solid #2a2a2a' }
+                      ? { background: `${c}1F`, color: c, border: `1.5px solid ${c}80` }
+                      : { background: 'var(--bg-surface-2)', color: 'var(--text-muted)', border: '1.5px solid var(--border)' }
                   }
                 >
                   <span className="inline-flex items-center gap-1">
@@ -330,12 +331,12 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
         </div>
 
         <div>
-          <label className="block text-xs text-[#888] uppercase tracking-wider mb-2 font-semibold">Texto</label>
+          <label className="block text-xs text-app-muted uppercase tracking-wider mb-2 font-semibold">Texto</label>
           <TextEditor nodoId={nodo.id} initialText={nodo.texto} onChange={setTexto} />
-          <p className="text-xs text-[#555] mt-1">Usa *texto* para negrilla · soporta pegar formato</p>
+          <p className="text-xs text-app-muted mt-1">Usa *texto* para negrilla · soporta pegar formato</p>
         </div>
 
-        <div className="text-xs text-[#555] bg-[#161616] border border-[#222] rounded-lg px-3 py-2.5 leading-relaxed">
+        <div className="text-xs text-app-muted bg-app-surface-2 border border-app-border rounded-lg px-3 py-2.5 leading-relaxed">
           <span className="inline-flex items-start gap-1.5">
             <svg className="shrink-0 mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             Arrastra los bordes del nodo en el canvas para redimensionarlo.
@@ -343,11 +344,11 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
         </div>
       </div>
 
-      <div className="p-5 border-t border-[#222] space-y-2">
+      <div className="p-5 border-t border-app-border space-y-2">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-[#3B82F6] hover:bg-[#2563eb] disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors"
+          className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors shadow-soft"
         >
           {saving ? 'Guardando...' : (
             <span className="inline-flex items-center gap-1.5">
@@ -359,10 +360,10 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className={`w-full rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+          className={`w-full rounded-xl py-2.5 text-sm font-semibold transition-colors border ${
             confirmDelete
-              ? 'bg-red-600 hover:bg-red-500 text-white'
-              : 'bg-[#1a1a1a] hover:bg-[#222] text-[#888] hover:text-red-400'
+              ? 'bg-red-600 hover:bg-red-500 text-white border-red-600'
+              : 'bg-app-surface-2 hover:bg-app-border text-app-muted hover:text-red-500 border-app-border'
           }`}
         >
           {deleting ? 'Eliminando...' : confirmDelete ? (
@@ -380,7 +381,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
         {confirmDelete && (
           <button
             onClick={() => setConfirmDelete(false)}
-            className="w-full bg-[#1a1a1a] hover:bg-[#222] text-[#666] rounded-xl py-2 text-xs transition-colors"
+            className="w-full bg-app-surface-2 hover:bg-app-border text-app-muted rounded-xl py-2 text-xs transition-colors border border-app-border"
           >
             Cancelar
           </button>
@@ -624,8 +625,8 @@ export default function ModoEditor({
             {
               ...connection,
               id: data.id,
-              markerEnd: { type: MarkerType.ArrowClosed, color: '#888' },
-              style: { stroke: '#666', strokeWidth: 2 },
+              markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--rf-edge)' },
+              style: { strokeWidth: 2 },
             },
             eds
           )
@@ -780,17 +781,25 @@ export default function ModoEditor({
         snapGrid={[20, 20]}
         connectionMode={ConnectionMode.Loose}
       >
-        <Background color="#2a2a2a" gap={20} />
+        <Background color="var(--dot-pattern)" gap={20} size={1} />
         <Controls />
         <MiniMap
-          nodeColor={(n) => COLOR_MAP[n.data?.tipo as TipoNodo] ?? '#555'}
-          maskColor="#0f0f0f99"
+          nodeColor={(n) => COLOR_MAP[n.data?.tipo as TipoNodo] ?? '#94a3b8'}
+          maskColor="rgba(0,0,0,0.06)"
+          style={{ background: 'var(--bg-surface)' }}
         />
 
         <Panel position="top-left">
           <div className="flex items-start gap-2">
-            <div className="bg-[#111]/80 backdrop-blur border border-[#222] rounded-xl px-4 py-2 text-xs text-[#666] space-y-1">
-              <p>• Botón <span className="text-white">+</span> (esquina sup. der.) → crea nodo hijo</p>
+            <div
+              className="backdrop-blur border rounded-xl px-4 py-2 text-xs space-y-1 shadow-card"
+              style={{
+                background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)',
+                borderColor: 'var(--border)',
+                color: 'var(--text-muted)',
+              }}
+            >
+              <p>• Botón <span className="text-app-text font-semibold">+</span> (esquina sup. der.) → crea nodo hijo</p>
               <p>• Arrastra desde cualquier handle → conexión manual</p>
               <p>• 2 handles por nodo (izq/der) · conexiones ilimitadas</p>
               <p>• Clic en flecha → menú (invertir / eliminar)</p>
@@ -799,11 +808,11 @@ export default function ModoEditor({
             <button
               onClick={toggleSnap}
               title="Snap to grid 20px"
-              className="px-3 py-2 rounded-xl text-xs font-semibold border transition-all backdrop-blur"
+              className="px-3 py-2 rounded-xl text-xs font-semibold border transition-all backdrop-blur shadow-soft"
               style={
                 snapEnabled
-                  ? { background: '#3B82F620', color: '#3B82F6', border: '1.5px solid #3B82F660' }
-                  : { background: 'rgba(17,17,17,0.8)', color: '#555', border: '1.5px solid #2a2a2a' }
+                  ? { background: '#F9731620', color: '#F97316', border: '1.5px solid #F9731680' }
+                  : { background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)', color: 'var(--text-muted)', border: '1.5px solid var(--border)' }
               }
             >
               <span className="inline-flex items-center gap-1">
@@ -817,7 +826,7 @@ export default function ModoEditor({
         <Panel position="bottom-right">
           <button
             onClick={handleAddNodo}
-            className="w-12 h-12 bg-[#3B82F6] hover:bg-[#2563eb] text-white rounded-full shadow-lg text-2xl flex items-center justify-center transition-colors"
+            className="w-12 h-12 bg-brand hover:bg-brand-hover text-white rounded-full shadow-pop text-2xl flex items-center justify-center transition-all hover:scale-105"
             title="Agregar nodo"
           >
             +
@@ -828,8 +837,10 @@ export default function ModoEditor({
       {/* CAMBIO 3: floating edge menu */}
       {edgeMenu && (
         <div
-          className="fixed bg-[#0f0f0f] border border-[#333] rounded-xl shadow-2xl z-50 flex gap-1 p-1"
+          className="fixed border rounded-xl shadow-pop z-50 flex gap-1 p-1"
           style={{
+            background: 'var(--bg-surface)',
+            borderColor: 'var(--border)',
             left: Math.min(edgeMenu.x, window.innerWidth - 230),
             top: Math.min(edgeMenu.y, window.innerHeight - 50),
           }}
@@ -837,7 +848,7 @@ export default function ModoEditor({
         >
           <button
             onClick={handleFlipEdge}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-[#3B82F6] hover:bg-[#3B82F620] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-brand hover:bg-brand/10 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             Invertir dirección

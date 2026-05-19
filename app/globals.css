@@ -1,15 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg-primary: #0f0f0f;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #222222;
-  --border: #2a2a2a;
+  /* Light theme (default) */
+  --bg-app: #f5f5f7;
+  --bg-surface: #ffffff;
+  --bg-surface-2: #f9fafb;
+  --bg-elevated: #ffffff;
+  --bg-nav: #0a0a0b;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-on-nav: #d4d4d8;
+  --brand: #F97316;
+  --brand-hover: #EA580C;
+  --brand-soft: #FFEDD5;
+  --dot-pattern: #d1d5db;
+  --rf-bg: transparent;
+  --rf-edge: #94a3b8;
+  --rf-handle-bg: #ffffff;
+  --rf-handle-border: #94a3b8;
+  --shadow-card: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -1px rgb(15 23 42 / 0.04);
+}
+
+.dark {
+  --bg-app: #0a0a0b;
+  --bg-surface: #141416;
+  --bg-surface-2: #1c1c1f;
+  --bg-elevated: #18181b;
+  --bg-nav: #050507;
+  --border: #27272a;
+  --border-strong: #3f3f46;
   --text-primary: #f0f0f0;
-  --text-muted: #888888;
+  --text-secondary: #c4c4c8;
+  --text-muted: #71717a;
+  --text-on-nav: #a1a1aa;
+  --brand: #F97316;
+  --brand-hover: #FB923C;
+  --brand-soft: #431407;
+  --dot-pattern: #27272a;
+  --rf-bg: transparent;
+  --rf-edge: #52525b;
+  --rf-handle-bg: #18181b;
+  --rf-handle-border: #52525b;
+  --shadow-card: 0 4px 12px -2px rgb(0 0 0 / 0.4), 0 2px 4px -1px rgb(0 0 0 / 0.3);
 }
 
 * {
@@ -18,13 +56,14 @@
 
 html,
 body {
-  background-color: var(--bg-primary);
+  background-color: var(--bg-app);
   color: var(--text-primary);
   font-family: 'Inter', system-ui, sans-serif;
   margin: 0;
   padding: 0;
   height: 100%;
   overflow: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #__next,
@@ -34,65 +73,77 @@ main {
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #444;
-  border-radius: 3px;
+  background: var(--border-strong);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--text-muted);
 }
 
-/* React Flow overrides */
+/* React Flow overrides — use theme variables */
+.react-flow {
+  background-color: var(--bg-app) !important;
+}
+
 .react-flow__background {
-  background-color: #0f0f0f !important;
+  background-color: var(--bg-app) !important;
 }
 
 .react-flow__edge-path {
-  stroke: #555 !important;
+  stroke: var(--rf-edge) !important;
   stroke-width: 2 !important;
 }
 
 .react-flow__arrowhead {
-  fill: #555 !important;
+  fill: var(--rf-edge) !important;
 }
 
 .react-flow__handle {
   width: 10px !important;
   height: 10px !important;
-  background: #555 !important;
-  border: 2px solid #333 !important;
-  transition: background 0.15s;
+  background: var(--rf-handle-bg) !important;
+  border: 2px solid var(--rf-handle-border) !important;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .react-flow__handle:hover {
-  background: #888 !important;
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
 }
 
 .react-flow__controls {
-  background: #1a1a1a !important;
-  border: 1px solid #2a2a2a !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .react-flow__controls button {
-  background: #1a1a1a !important;
-  border-bottom: 1px solid #2a2a2a !important;
-  color: #ccc !important;
-  fill: #ccc !important;
+  background: var(--bg-surface) !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text-secondary) !important;
+  fill: var(--text-secondary) !important;
 }
 
 .react-flow__controls button:hover {
-  background: #2a2a2a !important;
+  background: var(--bg-surface-2) !important;
+  color: var(--brand) !important;
+  fill: var(--brand) !important;
 }
 
 .react-flow__minimap {
-  background: #1a1a1a !important;
-  border: 1px solid #2a2a2a !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-card);
 }
 
 /* Bold from asterisks */
@@ -104,4 +155,21 @@ main {
 .wapp-text {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Reusable elevated card */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  background: rgb(15 23 42 / 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.dark .modal-backdrop {
+  background: rgb(0 0 0 / 0.7);
 }
