@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   Controls,
@@ -15,10 +15,14 @@ import ReactFlow, {
   applyEdgeChanges,
   MarkerType,
   NodeMouseHandler,
+  NodeProps,
+  Handle,
+  Position,
   Panel,
-  OnConnectStartParams,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
+import { NodeResizer } from '@reactflow/node-resizer'
+import '@reactflow/node-resizer/dist/style.css'
 import { Nodo, Conexion, TipoNodo, Kit } from '@/types'
 import { supabase } from '@/lib/supabase'
 
@@ -35,29 +39,118 @@ const COLOR_MAP: Record<TipoNodo, string> = {
   cliente: '#F97316',
 }
 
-// CAMBIO 6: build node with saved dimensions
+// ───────────────────────────────────────────────────────────
+// Custom node component with NodeResizer + "+" button
+// ───────────────────────────────────────────────────────────
+interface TattoNodeData {
+  label: string
+  tipo: TipoNodo
+  color: string
+  onCreateChild: (parentId: string) => void
+  onResize: (id: string, width: number, height: number) => void
+}
+
+function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
+  const color = data.color
+
+  return (
+    <>
+      {/* CORRECCIÓN 1 & 3: NodeResizer with min limits only, no max */}
+      <NodeResizer
+        isVisible={selected}
+        minWidth={150}
+        minHeight={60}
+        maxWidth={9999}
+        maxHeight={9999}
+        lineStyle={{ borderColor: color, borderWidth: 1.5 }}
+        handleStyle={{
+          background: color,
+          width: 9,
+          height: 9,
+          borderRadius: 2,
+          border: '1.5px solid #fff',
+        }}
+        onResize={(_, params) => data.onResize(id, params.width, params.height)}
+      />
+
+      {/* Node body */}
+      <div
+        className="group relative w-full h-full flex items-center"
+        style={{
+          background: `${color}18`,
+          border: `1.5px solid ${color}70`,
+          borderRadius: 12,
+          color: '#f0f0f0',
+          fontSize: 13,
+          padding: '10px 14px',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+        }}
+      >
+        <Handle
+          type="target"
+          position={Position.Left}
+          style={{ background: '#555', width: 10, height: 10 }}
+        />
+
+        <div
+          className="flex-1 leading-relaxed"
+          style={{
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
+            overflow: 'hidden',
+          }}
+        >
+          {data.label}
+        </div>
+
+        <Handle
+          type="source"
+          position={Position.Right}
+          style={{ background: '#555', width: 10, height: 10 }}
+        />
+
+        {/* CORRECCIÓN 2: "+" button for click-to-create child node */}
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            data.onCreateChild(id)
+          }}
+          className={`absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-white text-sm font-bold flex items-center justify-center shadow-lg z-20 transition-opacity ${
+            selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+          style={{ background: color, border: '2px solid #0f0f0f' }}
+          title="Crear nodo hijo"
+        >
+          +
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ───────────────────────────────────────────────────────────
+// Build helpers
+// ───────────────────────────────────────────────────────────
 function buildRFNode(n: Nodo): Node {
   const color = COLOR_MAP[n.tipo] ?? '#555'
   const w = n.ancho ?? 200
   const h = n.alto ?? 80
   return {
     id: n.id,
+    type: 'tatto',
     position: { x: n.posicion_x, y: n.posicion_y },
-    data: { label: n.texto, tipo: n.tipo, color },
-    style: {
-      background: `${color}18`,
-      border: `1.5px solid ${color}70`,
-      borderRadius: 12,
-      padding: '10px 14px',
-      color: '#f0f0f0',
-      fontSize: 13,
-      width: w,
-      minHeight: h,
-      cursor: 'pointer',
-      wordBreak: 'break-word' as const,
-      whiteSpace: 'pre-wrap' as const,
+    data: {
+      label: n.texto,
+      tipo: n.tipo,
+      color,
     },
-    type: 'default',
+    style: {
+      width: w,
+      height: h,
+    },
   }
 }
 
@@ -71,7 +164,9 @@ function buildRFEdge(c: Conexion): Edge {
   }
 }
 
-// CAMBIO 3: contentEditable text editor
+// ───────────────────────────────────────────────────────────
+// contentEditable text editor
+// ───────────────────────────────────────────────────────────
 function TextEditor({
   nodoId,
   initialText,
@@ -84,7 +179,6 @@ function TextEditor({
   const ref = useRef<HTMLDivElement>(null)
   const lastNodoId = useRef<string | null>(null)
 
-  // Sync DOM only when the selected nodo changes, not on every keystroke
   useEffect(() => {
     if (ref.current && nodoId !== lastNodoId.current) {
       ref.current.innerText = initialText
@@ -120,19 +214,19 @@ function TextEditor({
   )
 }
 
+// ───────────────────────────────────────────────────────────
+// Node edit panel (without size inputs — resize handled by dragging)
+// ───────────────────────────────────────────────────────────
 interface NodePanelProps {
   nodo: Nodo | null
   onClose: () => void
-  onSave: (id: string, texto: string, tipo: TipoNodo, ancho: number, alto: number) => Promise<void>
+  onSave: (id: string, texto: string, tipo: TipoNodo) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }
 
 function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
   const [texto, setTexto] = useState(nodo?.texto ?? '')
   const [tipo, setTipo] = useState<TipoNodo>(nodo?.tipo ?? 'yo')
-  // CAMBIO 6: size fields
-  const [ancho, setAncho] = useState(nodo?.ancho ?? 200)
-  const [alto, setAlto] = useState(nodo?.alto ?? 80)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -140,8 +234,6 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
   useEffect(() => {
     setTexto(nodo?.texto ?? '')
     setTipo(nodo?.tipo ?? 'yo')
-    setAncho(nodo?.ancho ?? 200)
-    setAlto(nodo?.alto ?? 80)
     setConfirmDelete(false)
   }, [nodo?.id])
 
@@ -149,7 +241,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
 
   const handleSave = async () => {
     setSaving(true)
-    await onSave(nodo.id, texto, tipo, ancho, alto)
+    await onSave(nodo.id, texto, tipo)
     setSaving(false)
   }
 
@@ -173,7 +265,6 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
-        {/* Tipo */}
         <div>
           <label className="block text-xs text-[#888] uppercase tracking-wider mb-2 font-semibold">Tipo</label>
           <div className="grid grid-cols-3 gap-1.5">
@@ -197,40 +288,14 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
           </div>
         </div>
 
-        {/* CAMBIO 3: contentEditable text editor */}
         <div>
           <label className="block text-xs text-[#888] uppercase tracking-wider mb-2 font-semibold">Texto</label>
           <TextEditor nodoId={nodo.id} initialText={nodo.texto} onChange={setTexto} />
           <p className="text-xs text-[#555] mt-1">Usa *texto* para negrilla · soporta pegar formato</p>
         </div>
 
-        {/* CAMBIO 6: size inputs */}
-        <div>
-          <label className="block text-xs text-[#888] uppercase tracking-wider mb-2 font-semibold">Tamaño</label>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-[#666] mb-1">Ancho (px)</label>
-              <input
-                type="number"
-                min={150}
-                max={600}
-                value={ancho}
-                onChange={(e) => setAncho(Math.min(600, Math.max(150, Number(e.target.value))))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-[#f0f0f0] outline-none focus:border-[#3a3a3a]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#666] mb-1">Alto (px)</label>
-              <input
-                type="number"
-                min={60}
-                max={400}
-                value={alto}
-                onChange={(e) => setAlto(Math.min(400, Math.max(60, Number(e.target.value))))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-[#f0f0f0] outline-none focus:border-[#3a3a3a]"
-              />
-            </div>
-          </div>
+        <div className="text-xs text-[#555] bg-[#161616] border border-[#222] rounded-lg px-3 py-2.5 leading-relaxed">
+          💡 Arrastra los bordes del nodo en el canvas para redimensionarlo.
         </div>
       </div>
 
@@ -266,6 +331,9 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
   )
 }
 
+// ───────────────────────────────────────────────────────────
+// Main editor
+// ───────────────────────────────────────────────────────────
 type UndoEntry = { id: string; x: number; y: number }
 
 export default function ModoEditor({
@@ -279,18 +347,17 @@ export default function ModoEditor({
   const [selectedNodo, setSelectedNodo] = useState<Nodo | null>(null)
   const [nodos, setNodos] = useState<Nodo[]>(initialNodos)
 
-  // CAMBIO 4: undo history
+  // Undo history (positions)
   const [undoHistory, setUndoHistory] = useState<UndoEntry[]>([])
   const undoHistoryRef = useRef<UndoEntry[]>([])
   useEffect(() => { undoHistoryRef.current = undoHistory }, [undoHistory])
 
-  // CAMBIO 5: snap to grid
+  // Snap to grid
   const [snapEnabled, setSnapEnabled] = useState(false)
   useEffect(() => {
     const saved = localStorage.getItem('tattoflow-snap')
     if (saved !== null) setSnapEnabled(saved === 'true')
   }, [])
-
   const toggleSnap = useCallback(() => {
     setSnapEnabled((s) => {
       const next = !s
@@ -299,24 +366,113 @@ export default function ModoEditor({
     })
   }, [])
 
-  // CAMBIO 1: detect click vs drag on source handle
-  const connectingNodeId = useRef<string | null>(null)
-  const connectStartPos = useRef<{ x: number; y: number } | null>(null)
-  const connectionMadeRef = useRef(false)
-
-  // CAMBIO 2 & 4: track drag start position
   const dragStartPosRef = useRef<{ id: string; x: number; y: number } | null>(null)
 
-  // Sync when kit changes
+  // CORRECCIÓN 1: debounced resize save (one timer per node)
+  const resizeTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+  // Stable callback refs so we don't have to rebuild all nodes when state changes
+  const createChildRef = useRef<(parentId: string) => Promise<void>>(async () => {})
+  const resizeRef = useRef<(id: string, w: number, h: number) => void>(() => {})
+
+  // Sync when kit changes — inject stable callbacks into node data
   useEffect(() => {
     setNodos(initialNodos)
-    setRfNodes(initialNodos.map(buildRFNode))
+    setRfNodes(
+      initialNodos.map((n) => {
+        const rf = buildRFNode(n)
+        rf.data = {
+          ...rf.data,
+          onCreateChild: (pid: string) => createChildRef.current(pid),
+          onResize: (id: string, w: number, h: number) => resizeRef.current(id, w, h),
+        }
+        return rf
+      })
+    )
     setRfEdges(initialConexiones.map(buildRFEdge))
     setSelectedNodo(null)
     setUndoHistory([])
   }, [kit.id, initialNodos, initialConexiones])
 
-  // CAMBIO 4: Ctrl+Z / Cmd+Z undo
+  // Helper: build node with callbacks attached
+  const buildNodeWithCallbacks = useCallback((n: Nodo): Node => {
+    const rf = buildRFNode(n)
+    rf.data = {
+      ...rf.data,
+      onCreateChild: (pid: string) => createChildRef.current(pid),
+      onResize: (id: string, w: number, h: number) => resizeRef.current(id, w, h),
+    }
+    return rf
+  }, [])
+
+  // CORRECCIÓN 2: click "+" → create child node + connection
+  useEffect(() => {
+    createChildRef.current = async (parentId: string) => {
+      const parent = nodos.find((n) => n.id === parentId)
+      if (!parent) return
+
+      const oppositeType: TipoNodo =
+        parent.tipo === 'cliente' ? 'yo' : 'cliente'
+
+      const { data: newNodo, error: nErr } = await supabase
+        .from('nodos')
+        .insert({
+          kit_id: kit.id,
+          tipo: oppositeType,
+          texto: 'Escribe aquí...',
+          posicion_x: parent.posicion_x + 320,
+          posicion_y: parent.posicion_y,
+          ancho: 200,
+          alto: 80,
+        })
+        .select()
+        .single()
+      if (nErr || !newNodo) return
+
+      const { data: newConn } = await supabase
+        .from('conexiones')
+        .insert({
+          kit_id: kit.id,
+          nodo_origen_id: parentId,
+          nodo_destino_id: newNodo.id,
+        })
+        .select()
+        .single()
+
+      const updatedNodos = [...nodos, newNodo]
+      setNodos(updatedNodos)
+      setRfNodes(updatedNodos.map(buildNodeWithCallbacks))
+      if (newConn) setRfEdges((eds) => [...eds, buildRFEdge(newConn)])
+      setSelectedNodo(newNodo)
+      onDataChange()
+    }
+  }, [nodos, kit.id, onDataChange, buildNodeWithCallbacks])
+
+  // CORRECCIÓN 1: resize handler with 600ms debounce per node
+  useEffect(() => {
+    resizeRef.current = (id: string, w: number, h: number) => {
+      const width = Math.round(w)
+      const height = Math.round(h)
+
+      // Immediate local update (NodeResizer already updates style via RF state,
+      // but we keep our nodos[] in sync for next rebuilds)
+      const existing = resizeTimersRef.current.get(id)
+      if (existing) clearTimeout(existing)
+      const timer = setTimeout(async () => {
+        await supabase
+          .from('nodos')
+          .update({ ancho: width, alto: height })
+          .eq('id', id)
+        setNodos((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, ancho: width, alto: height } : n))
+        )
+        resizeTimersRef.current.delete(id)
+      }, 600)
+      resizeTimersRef.current.set(id, timer)
+    }
+  }, [])
+
+  // Ctrl+Z undo position
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
@@ -354,7 +510,6 @@ export default function ModoEditor({
     []
   )
 
-  // CAMBIO 2 & 4: capture start position then save on stop
   const onNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
     dragStartPosRef.current = { id: node.id, x: node.position.x, y: node.position.y }
   }, [])
@@ -379,7 +534,6 @@ export default function ModoEditor({
   const onConnect = useCallback(
     async (connection: Connection) => {
       if (!connection.source || !connection.target) return
-      connectionMadeRef.current = true
       const { data, error } = await supabase
         .from('conexiones')
         .insert({
@@ -406,82 +560,6 @@ export default function ModoEditor({
     [kit.id]
   )
 
-  // CAMBIO 1: record source node on connection start
-  const onConnectStart = useCallback(
-    (event: React.MouseEvent | React.TouchEvent, params: OnConnectStartParams) => {
-      connectingNodeId.current = params.nodeId
-      connectionMadeRef.current = false
-      const { clientX, clientY } =
-        'touches' in event ? event.touches[0] : event
-      connectStartPos.current = { x: clientX, y: clientY }
-    },
-    []
-  )
-
-  // CAMBIO 1: if released with tiny movement = click → create child node
-  const onConnectEnd = useCallback(
-    async (event: MouseEvent | TouchEvent) => {
-      const sourceId = connectingNodeId.current
-      connectingNodeId.current = null
-      if (!sourceId || connectionMadeRef.current) return
-      connectionMadeRef.current = false
-
-      const { clientX, clientY } =
-        event instanceof TouchEvent ? event.changedTouches[0] : event
-      const start = connectStartPos.current
-      connectStartPos.current = null
-      if (!start) return
-
-      const dist = Math.sqrt((clientX - start.x) ** 2 + (clientY - start.y) ** 2)
-      if (dist >= 8) return // it was a real drag
-
-      // It was a click on the handle → auto-create child node
-      const sourceNodo = nodos.find((n) => n.id === sourceId)
-      if (!sourceNodo) return
-
-      const oppositeType: TipoNodo =
-        sourceNodo.tipo === 'cliente' ? 'yo' : 'cliente'
-
-      const sourceRFNode = rfNodes.find((n) => n.id === sourceId)
-      const newX = (sourceRFNode?.position.x ?? 0) + 250
-      const newY = sourceRFNode?.position.y ?? 0
-
-      const { data: newNodo, error: nErr } = await supabase
-        .from('nodos')
-        .insert({
-          kit_id: kit.id,
-          tipo: oppositeType,
-          texto: 'Escribe aquí...',
-          posicion_x: newX,
-          posicion_y: newY,
-          ancho: 200,
-          alto: 80,
-        })
-        .select()
-        .single()
-      if (nErr || !newNodo) return
-
-      const { data: newConn, error: cErr } = await supabase
-        .from('conexiones')
-        .insert({
-          kit_id: kit.id,
-          nodo_origen_id: sourceId,
-          nodo_destino_id: newNodo.id,
-        })
-        .select()
-        .single()
-
-      const updatedNodos = [...nodos, newNodo]
-      setNodos(updatedNodos)
-      setRfNodes(updatedNodos.map(buildRFNode))
-      if (!cErr && newConn) {
-        setRfEdges((eds) => [...eds, buildRFEdge(newConn)])
-      }
-      onDataChange()
-    },
-    [nodos, rfNodes, kit.id, onDataChange]
-  )
-
   const onEdgeClick = useCallback(async (_: React.MouseEvent, edge: Edge) => {
     const confirmed = window.confirm('¿Eliminar esta conexión?')
     if (!confirmed) return
@@ -497,24 +575,21 @@ export default function ModoEditor({
     [nodos]
   )
 
-  // CAMBIO 6: save with dimensions
   const handleSaveNodo = useCallback(
-    async (id: string, texto: string, tipo: TipoNodo, ancho: number, alto: number) => {
+    async (id: string, texto: string, tipo: TipoNodo) => {
       const { error } = await supabase
         .from('nodos')
-        .update({ texto, tipo, ancho, alto })
+        .update({ texto, tipo })
         .eq('id', id)
       if (!error) {
-        const updated = nodos.map((n) =>
-          n.id === id ? { ...n, texto, tipo, ancho, alto } : n
-        )
+        const updated = nodos.map((n) => (n.id === id ? { ...n, texto, tipo } : n))
         setNodos(updated)
-        setRfNodes(updated.map(buildRFNode))
-        setSelectedNodo((sn) => (sn?.id === id ? { ...sn, texto, tipo, ancho, alto } : sn))
+        setRfNodes(updated.map(buildNodeWithCallbacks))
+        setSelectedNodo((sn) => (sn?.id === id ? { ...sn, texto, tipo } : sn))
         onDataChange()
       }
     },
-    [nodos, onDataChange]
+    [nodos, onDataChange, buildNodeWithCallbacks]
   )
 
   const handleDeleteNodo = useCallback(
@@ -522,12 +597,12 @@ export default function ModoEditor({
       await supabase.from('nodos').delete().eq('id', id)
       const updated = nodos.filter((n) => n.id !== id)
       setNodos(updated)
-      setRfNodes(updated.map(buildRFNode))
+      setRfNodes(updated.map(buildNodeWithCallbacks))
       setRfEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id))
       setSelectedNodo(null)
       onDataChange()
     },
-    [nodos, onDataChange]
+    [nodos, onDataChange, buildNodeWithCallbacks]
   )
 
   const handleAddNodo = useCallback(async () => {
@@ -547,21 +622,22 @@ export default function ModoEditor({
     if (!error && data) {
       const newNodos = [...nodos, data]
       setNodos(newNodos)
-      setRfNodes(newNodos.map(buildRFNode))
+      setRfNodes(newNodos.map(buildNodeWithCallbacks))
       onDataChange()
     }
-  }, [kit.id, nodos, onDataChange])
+  }, [kit.id, nodos, onDataChange, buildNodeWithCallbacks])
+
+  const nodeTypes = useMemo(() => ({ tatto: TattoNode }), [])
 
   return (
     <div className="flex-1 relative h-full">
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
+        nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onConnectStart={onConnectStart}
-        onConnectEnd={onConnectEnd}
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
         onNodeDragStart={onNodeDragStart}
@@ -580,15 +656,14 @@ export default function ModoEditor({
           maskColor="#0f0f0f99"
         />
 
-        {/* CAMBIO 5: snap toggle + hints */}
         <Panel position="top-left">
           <div className="flex items-start gap-2">
             <div className="bg-[#111]/80 backdrop-blur border border-[#222] rounded-xl px-4 py-2 text-xs text-[#666] space-y-1">
-              <p>• Arrastra nodos para moverlos</p>
-              <p>• Clic en handle → crea nodo hijo</p>
-              <p>• Arrastra handle → conecta manualmente</p>
+              <p>• Hover/seleccionar nodo → click <span className="text-white">+</span> crea hijo</p>
+              <p>• Arrastra desde el handle derecho → conecta manual</p>
+              <p>• Arrastra bordes del nodo seleccionado → redimensiona</p>
               <p>• Clic en flecha → elimina conexión</p>
-              <p>• Clic en nodo → editar · Ctrl+Z → deshacer</p>
+              <p>• Ctrl+Z → deshacer movimiento</p>
             </div>
             <button
               onClick={toggleSnap}
@@ -597,7 +672,7 @@ export default function ModoEditor({
               style={
                 snapEnabled
                   ? { background: '#3B82F620', color: '#3B82F6', border: '1.5px solid #3B82F660' }
-                  : { background: '#111/80', color: '#555', border: '1.5px solid #2a2a2a' }
+                  : { background: 'rgba(17,17,17,0.8)', color: '#555', border: '1.5px solid #2a2a2a' }
               }
             >
               ⊞ Snap
