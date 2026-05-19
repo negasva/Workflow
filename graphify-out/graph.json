@@ -1,0 +1,787 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "next.config.js",
+      "file_type": "code",
+      "source_file": "next.config.js",
+      "source_location": "L1",
+      "id": "next_config_js",
+      "community": 6,
+      "norm_label": "next.config.js"
+    },
+    {
+      "label": "postcss.config.js",
+      "file_type": "code",
+      "source_file": "postcss.config.js",
+      "source_location": "L1",
+      "id": "postcss_config_js",
+      "community": 7,
+      "norm_label": "postcss.config.js"
+    },
+    {
+      "label": "tailwind.config.ts",
+      "file_type": "code",
+      "source_file": "tailwind.config.ts",
+      "source_location": "L1",
+      "id": "tailwind_config_ts",
+      "community": 8,
+      "norm_label": "tailwind.config.ts"
+    },
+    {
+      "label": "layout.tsx",
+      "file_type": "code",
+      "source_file": "app/layout.tsx",
+      "source_location": "L1",
+      "id": "app_layout_tsx",
+      "community": 5,
+      "norm_label": "layout.tsx"
+    },
+    {
+      "label": "RootLayout()",
+      "file_type": "code",
+      "source_file": "app/layout.tsx",
+      "source_location": "L9",
+      "id": "app_layout_rootlayout",
+      "community": 5,
+      "norm_label": "rootlayout()"
+    },
+    {
+      "label": "page.tsx",
+      "file_type": "code",
+      "source_file": "app/page.tsx",
+      "source_location": "L1",
+      "id": "app_page_tsx",
+      "community": 0,
+      "norm_label": "page.tsx"
+    },
+    {
+      "label": "ModoEditor.tsx",
+      "file_type": "code",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L1",
+      "id": "components_modoeditor_tsx",
+      "community": 2,
+      "norm_label": "modoeditor.tsx"
+    },
+    {
+      "label": "flipHandle()",
+      "file_type": "code",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L44",
+      "id": "components_modoeditor_fliphandle",
+      "community": 2,
+      "norm_label": "fliphandle()"
+    },
+    {
+      "label": "TattoNode()",
+      "file_type": "code",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L61",
+      "id": "components_modoeditor_tattonode",
+      "community": 2,
+      "norm_label": "tattonode()"
+    },
+    {
+      "label": "handlePaste()",
+      "file_type": "code",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L221",
+      "id": "components_modoeditor_handlepaste",
+      "community": 2,
+      "norm_label": "handlepaste()"
+    },
+    {
+      "label": "handleSave()",
+      "file_type": "code",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L274",
+      "id": "components_modoeditor_handlesave",
+      "community": 2,
+      "norm_label": "handlesave()"
+    },
+    {
+      "label": "handleDelete()",
+      "file_type": "code",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L280",
+      "id": "components_modoeditor_handledelete",
+      "community": 2,
+      "norm_label": "handledelete()"
+    },
+    {
+      "label": "handleKeyDown()",
+      "file_type": "code",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L500",
+      "id": "components_modoeditor_handlekeydown",
+      "community": 2,
+      "norm_label": "handlekeydown()"
+    },
+    {
+      "label": "ModoVenta.tsx",
+      "file_type": "code",
+      "source_file": "components/ModoVenta.tsx",
+      "source_location": "L1",
+      "id": "components_modoventa_tsx",
+      "community": 0,
+      "norm_label": "modoventa.tsx"
+    },
+    {
+      "label": "renderWappText()",
+      "file_type": "code",
+      "source_file": "components/ModoVenta.tsx",
+      "source_location": "L11",
+      "id": "components_modoventa_renderwapptext",
+      "community": 0,
+      "norm_label": "renderwapptext()"
+    },
+    {
+      "label": "Sidebar.tsx",
+      "file_type": "code",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L1",
+      "id": "components_sidebar_tsx",
+      "community": 0,
+      "norm_label": "sidebar.tsx"
+    },
+    {
+      "label": "handleDeleteClick()",
+      "file_type": "code",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L31",
+      "id": "components_sidebar_handledeleteclick",
+      "community": 0,
+      "norm_label": "handledeleteclick()"
+    },
+    {
+      "label": "handleDeleteConfirm()",
+      "file_type": "code",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L36",
+      "id": "components_sidebar_handledeleteconfirm",
+      "community": 0,
+      "norm_label": "handledeleteconfirm()"
+    },
+    {
+      "label": "handleRenameStart()",
+      "file_type": "code",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L43",
+      "id": "components_sidebar_handlerenamestart",
+      "community": 0,
+      "norm_label": "handlerenamestart()"
+    },
+    {
+      "label": "handleRenameSubmit()",
+      "file_type": "code",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L49",
+      "id": "components_sidebar_handlerenamesubmit",
+      "community": 0,
+      "norm_label": "handlerenamesubmit()"
+    },
+    {
+      "label": "supabase.ts",
+      "file_type": "code",
+      "source_file": "lib/supabase.ts",
+      "source_location": "L1",
+      "id": "lib_supabase_ts",
+      "community": 0,
+      "norm_label": "supabase.ts"
+    },
+    {
+      "label": "index.ts",
+      "file_type": "code",
+      "source_file": "types/index.ts",
+      "source_location": "L1",
+      "id": "types_index_ts",
+      "community": 0,
+      "norm_label": "index.ts"
+    },
+    {
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "id": "readme_md",
+      "community": 3,
+      "norm_label": "readme.md"
+    },
+    {
+      "label": "TattoFlow",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "id": "workflow_readme_tattoflow",
+      "community": 3,
+      "norm_label": "tattoflow"
+    },
+    {
+      "label": "Stack",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L5",
+      "id": "workflow_readme_stack",
+      "community": 3,
+      "norm_label": "stack"
+    },
+    {
+      "label": "Setup paso a paso",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L15",
+      "id": "workflow_readme_setup_paso_a_paso",
+      "community": 1,
+      "norm_label": "setup paso a paso"
+    },
+    {
+      "label": "1. Crear proyecto en Supabase",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L17",
+      "id": "workflow_readme_1_crear_proyecto_en_supabase",
+      "community": 1,
+      "norm_label": "1. crear proyecto en supabase"
+    },
+    {
+      "label": "2. Ejecutar el schema SQL",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L23",
+      "id": "workflow_readme_2_ejecutar_el_schema_sql",
+      "community": 1,
+      "norm_label": "2. ejecutar el schema sql"
+    },
+    {
+      "label": "3. Obtener credenciales de Supabase",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L33",
+      "id": "workflow_readme_3_obtener_credenciales_de_supabase",
+      "community": 1,
+      "norm_label": "3. obtener credenciales de supabase"
+    },
+    {
+      "label": "4. Configurar variables de entorno locales",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L40",
+      "id": "workflow_readme_4_configurar_variables_de_entorno_locales",
+      "community": 1,
+      "norm_label": "4. configurar variables de entorno locales"
+    },
+    {
+      "label": "code:bash (cp .env.local.example .env.local)",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L42",
+      "id": "workflow_readme_codeblock_1",
+      "community": 1,
+      "norm_label": "code:bash (cp .env.local.example .env.local)"
+    },
+    {
+      "label": "code:env (NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co)",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L48",
+      "id": "workflow_readme_codeblock_2",
+      "community": 1,
+      "norm_label": "code:env (next_public_supabase_url=https://xxxxxxxxxxxx.supabase.co)"
+    },
+    {
+      "label": "5. Instalar dependencias y correr localmente",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L53",
+      "id": "workflow_readme_5_instalar_dependencias_y_correr_localmente",
+      "community": 1,
+      "norm_label": "5. instalar dependencias y correr localmente"
+    },
+    {
+      "label": "code:bash (npm install)",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L55",
+      "id": "workflow_readme_codeblock_3",
+      "community": 1,
+      "norm_label": "code:bash (npm install)"
+    },
+    {
+      "label": "Deploy en Vercel",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L64",
+      "id": "workflow_readme_deploy_en_vercel",
+      "community": 4,
+      "norm_label": "deploy en vercel"
+    },
+    {
+      "label": "Opci\u00f3n A \u2014 desde la CLI de Vercel",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L66",
+      "id": "workflow_readme_opci_n_a_desde_la_cli_de_vercel",
+      "community": 4,
+      "norm_label": "opcion a \u2014 desde la cli de vercel"
+    },
+    {
+      "label": "code:bash (npm i -g vercel)",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L68",
+      "id": "workflow_readme_codeblock_4",
+      "community": 4,
+      "norm_label": "code:bash (npm i -g vercel)"
+    },
+    {
+      "label": "Opci\u00f3n B \u2014 desde vercel.com",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L73",
+      "id": "workflow_readme_opci_n_b_desde_vercel_com",
+      "community": 4,
+      "norm_label": "opcion b \u2014 desde vercel.com"
+    },
+    {
+      "label": "Uso",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L83",
+      "id": "workflow_readme_uso",
+      "community": 3,
+      "norm_label": "uso"
+    },
+    {
+      "label": "Modo Venta (\ud83d\udcac)",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L85",
+      "id": "workflow_readme_modo_venta",
+      "community": 3,
+      "norm_label": "modo venta (\ud83d\udcac)"
+    },
+    {
+      "label": "Modo Editor (\u270f\ufe0f)",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L92",
+      "id": "workflow_readme_modo_editor",
+      "community": 3,
+      "norm_label": "modo editor (\u270f\ufe0f)"
+    },
+    {
+      "label": "Tipos de nodo",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L101",
+      "id": "workflow_readme_tipos_de_nodo",
+      "community": 3,
+      "norm_label": "tipos de nodo"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/layout.tsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "app_layout_tsx",
+      "target": "app_layout_rootlayout",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/page.tsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "app_page_tsx",
+      "target": "lib_supabase_ts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/page.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "app_page_tsx",
+      "target": "types_index_ts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/page.tsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "app_page_tsx",
+      "target": "components_sidebar_tsx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/page.tsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "app_page_tsx",
+      "target": "components_modoventa_tsx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "components_modoeditor_tsx",
+      "target": "types_index_ts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "components_modoeditor_tsx",
+      "target": "lib_supabase_ts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "components_modoeditor_tsx",
+      "target": "components_modoeditor_fliphandle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "components_modoeditor_tsx",
+      "target": "components_modoeditor_tattonode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L221",
+      "weight": 1.0,
+      "source": "components_modoeditor_tsx",
+      "target": "components_modoeditor_handlepaste",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L274",
+      "weight": 1.0,
+      "source": "components_modoeditor_tsx",
+      "target": "components_modoeditor_handlesave",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L280",
+      "weight": 1.0,
+      "source": "components_modoeditor_tsx",
+      "target": "components_modoeditor_handledelete",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoEditor.tsx",
+      "source_location": "L500",
+      "weight": 1.0,
+      "source": "components_modoeditor_tsx",
+      "target": "components_modoeditor_handlekeydown",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoVenta.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "components_modoventa_tsx",
+      "target": "types_index_ts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/ModoVenta.tsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "components_modoventa_tsx",
+      "target": "components_modoventa_renderwapptext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "components_sidebar_tsx",
+      "target": "types_index_ts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "components_sidebar_tsx",
+      "target": "components_sidebar_handledeleteclick",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "components_sidebar_tsx",
+      "target": "components_sidebar_handledeleteconfirm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "components_sidebar_tsx",
+      "target": "components_sidebar_handlerenamestart",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/Sidebar.tsx",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "components_sidebar_tsx",
+      "target": "components_sidebar_handlerenamesubmit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "readme_md",
+      "target": "workflow_readme_tattoflow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "workflow_readme_tattoflow",
+      "target": "workflow_readme_stack",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "workflow_readme_tattoflow",
+      "target": "workflow_readme_setup_paso_a_paso",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "workflow_readme_tattoflow",
+      "target": "workflow_readme_deploy_en_vercel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "workflow_readme_tattoflow",
+      "target": "workflow_readme_uso",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "workflow_readme_setup_paso_a_paso",
+      "target": "workflow_readme_1_crear_proyecto_en_supabase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "workflow_readme_setup_paso_a_paso",
+      "target": "workflow_readme_2_ejecutar_el_schema_sql",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L33",
+      "weight": 1.0,
+      "source": "workflow_readme_setup_paso_a_paso",
+      "target": "workflow_readme_3_obtener_credenciales_de_supabase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "workflow_readme_setup_paso_a_paso",
+      "target": "workflow_readme_4_configurar_variables_de_entorno_locales",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "workflow_readme_setup_paso_a_paso",
+      "target": "workflow_readme_5_instalar_dependencias_y_correr_localmente",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "workflow_readme_4_configurar_variables_de_entorno_locales",
+      "target": "workflow_readme_codeblock_1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "workflow_readme_4_configurar_variables_de_entorno_locales",
+      "target": "workflow_readme_codeblock_2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "workflow_readme_5_instalar_dependencias_y_correr_localmente",
+      "target": "workflow_readme_codeblock_3",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "workflow_readme_deploy_en_vercel",
+      "target": "workflow_readme_opci_n_a_desde_la_cli_de_vercel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L73",
+      "weight": 1.0,
+      "source": "workflow_readme_deploy_en_vercel",
+      "target": "workflow_readme_opci_n_b_desde_vercel_com",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L68",
+      "weight": 1.0,
+      "source": "workflow_readme_opci_n_a_desde_la_cli_de_vercel",
+      "target": "workflow_readme_codeblock_4",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L85",
+      "weight": 1.0,
+      "source": "workflow_readme_uso",
+      "target": "workflow_readme_modo_venta",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "workflow_readme_uso",
+      "target": "workflow_readme_modo_editor",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L101",
+      "weight": 1.0,
+      "source": "workflow_readme_uso",
+      "target": "workflow_readme_tipos_de_nodo",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "81aae6326a7a5f8694284a6e8a12ae1e8f55954b"
+}

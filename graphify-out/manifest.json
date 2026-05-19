@@ -1,0 +1,58 @@
+{
+  "C:\\Users\\nvz9\\Workflow\\next.config.js": {
+    "mtime": 1779157947.9367452,
+    "hash": "60072d4c6ad51ba30502355cbaf6ebef"
+  },
+  "C:\\Users\\nvz9\\Workflow\\postcss.config.js": {
+    "mtime": 1779157947.9393237,
+    "hash": "762a94d1749c8e97eebf3f94102e8eb2"
+  },
+  "C:\\Users\\nvz9\\Workflow\\tailwind.config.ts": {
+    "mtime": 1779157947.9410243,
+    "hash": "0f4905aa886e1c9d0ebec4e18e64d6d8"
+  },
+  "C:\\Users\\nvz9\\Workflow\\app\\layout.tsx": {
+    "mtime": 1779157947.9332395,
+    "hash": "e3877b4f563661d0c665921878fa258b"
+  },
+  "C:\\Users\\nvz9\\Workflow\\app\\page.tsx": {
+    "mtime": 1779157947.9332395,
+    "hash": "41cfdf855eaa75dce385629d3f14fae1"
+  },
+  "C:\\Users\\nvz9\\Workflow\\components\\ModoEditor.tsx": {
+    "mtime": 1779157947.9346693,
+    "hash": "73e136a6ac97123895be27dea28475f7"
+  },
+  "C:\\Users\\nvz9\\Workflow\\components\\ModoVenta.tsx": {
+    "mtime": 1779157947.9346693,
+    "hash": "1fb83104e2fdcb0c28afe3b9c07668b5"
+  },
+  "C:\\Users\\nvz9\\Workflow\\components\\Sidebar.tsx": {
+    "mtime": 1779157947.9356685,
+    "hash": "b9a0e13821ed1eaaac539f30e5f6af4f"
+  },
+  "C:\\Users\\nvz9\\Workflow\\lib\\supabase.ts": {
+    "mtime": 1779157947.9356685,
+    "hash": "2a7a8b991b543ae8268a9491d12eccf3"
+  },
+  "C:\\Users\\nvz9\\Workflow\\supabase\\schema.sql": {
+    "mtime": 1779157947.9410243,
+    "hash": "1263247062c98e41640120a7fb36ef73"
+  },
+  "C:\\Users\\nvz9\\Workflow\\supabase\\migrations\\add_handles_to_conexiones.sql": {
+    "mtime": 1779157947.9400198,
+    "hash": "434df59519204d5b943bf978b90afda8"
+  },
+  "C:\\Users\\nvz9\\Workflow\\supabase\\migrations\\add_size_columns.sql": {
+    "mtime": 1779157947.9400198,
+    "hash": "2c56e6d48d9fe0c607e176aebdb5623b"
+  },
+  "C:\\Users\\nvz9\\Workflow\\types\\index.ts": {
+    "mtime": 1779157947.9420266,
+    "hash": "519e76af71bf4fe8a62681a7825a31b4"
+  },
+  "C:\\Users\\nvz9\\Workflow\\README.md": {
+    "mtime": 1779157947.9322321,
+    "hash": "61dab9a1420e1534d8770499238499fc"
+  }
+}
