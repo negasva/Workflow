@@ -35,9 +35,19 @@ interface ModoEditorProps {
 }
 
 const COLOR_MAP: Record<TipoNodo, string> = {
-  inicio: '#8B5CF6',
-  yo: '#3B82F6',
-  cliente: '#10B981',
+  inicio: '#6D28D9',  // violet-700
+  yo: '#1D4ED8',      // blue-700
+  cliente: '#047857', // emerald-700
+}
+
+// Darken a hex color by 15% for drop shadow
+function darken15(hex: string): string {
+  const m = hex.replace('#', '')
+  const r = parseInt(m.slice(0, 2), 16)
+  const g = parseInt(m.slice(2, 4), 16)
+  const b = parseInt(m.slice(4, 6), 16)
+  const d = (v: number) => Math.max(0, Math.round(v * 0.85))
+  return `rgb(${d(r)}, ${d(g)}, ${d(b)})`
 }
 
 // Flip handle: left ↔ right (keeps the same side logic but reverses direction)
@@ -60,6 +70,7 @@ interface TattoNodeData {
 
 function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
   const color = data.color
+  const shadowColor = darken15(color)
 
   return (
     <>
@@ -95,8 +106,8 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
           overflow: 'hidden',
           boxSizing: 'border-box',
           boxShadow: selected
-            ? `0 0 0 3px rgba(255,255,255,0.6), var(--shadow-node)`
-            : 'var(--shadow-node)',
+            ? `0 0 0 3px rgba(255,255,255,0.6), 0 8px 20px -4px ${shadowColor}, 0 3px 8px -2px ${shadowColor}`
+            : `0 8px 20px -4px ${shadowColor}, 0 3px 8px -2px ${shadowColor}`,
         }}
       >
         <Handle

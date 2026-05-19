@@ -9,9 +9,18 @@ interface ModoVentaProps {
 }
 
 const TIPO_COLOR: Record<TipoNodo, string> = {
-  inicio: '#8B5CF6',
-  yo: '#3B82F6',
-  cliente: '#10B981',
+  inicio: '#6D28D9',  // violet-700
+  yo: '#1D4ED8',      // blue-700
+  cliente: '#047857', // emerald-700
+}
+
+function darken15(hex: string): string {
+  const m = hex.replace('#', '')
+  const r = parseInt(m.slice(0, 2), 16)
+  const g = parseInt(m.slice(2, 4), 16)
+  const b = parseInt(m.slice(4, 6), 16)
+  const d = (v: number) => Math.max(0, Math.round(v * 0.85))
+  return `rgb(${d(r)}, ${d(g)}, ${d(b)})`
 }
 
 function TipoBadge({ tipo, color }: { tipo: TipoNodo; color: string }) {
@@ -144,7 +153,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
             style={{
               background: borderColor,
               borderRadius: 'var(--radius-card)',
-              boxShadow: 'var(--shadow-node)',
+              boxShadow: `0 8px 20px -4px ${darken15(borderColor)}, 0 3px 8px -2px ${darken15(borderColor)}`,
               color: '#ffffff',
             }}
           >
@@ -198,13 +207,13 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                     onKeyDown={(e) => e.key === 'Enter' && handleNavigate(node.id)}
                     className="w-full text-left p-4 transition-all group cursor-pointer"
                     style={{
-                      background: `${nc}CC`,
+                      background: nc,
                       borderRadius: 'var(--radius-card)',
-                      boxShadow: 'var(--shadow-drop)',
+                      boxShadow: `0 6px 16px -4px ${darken15(nc)}, 0 2px 6px -2px ${darken15(nc)}`,
                       color: '#ffffff',
                     }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.filter = 'brightness(1.08)'
+                      (e.currentTarget as HTMLDivElement).style.filter = 'brightness(1.1)'
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLDivElement).style.filter = ''

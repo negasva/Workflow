@@ -11,9 +11,9 @@ interface SearchModalProps {
 }
 
 const TIPO_COLOR: Record<TipoNodo, string> = {
-  inicio: '#8B5CF6',
-  yo: '#3B82F6',
-  cliente: '#10B981',
+  inicio: '#6D28D9',
+  yo: '#1D4ED8',
+  cliente: '#047857',
 }
 
 export default function SearchModal({ open, nodos, onClose, onSelect }: SearchModalProps) {

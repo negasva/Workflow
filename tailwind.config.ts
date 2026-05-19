@@ -21,9 +21,9 @@ const config: Config = {
           soft: '#FFEDD5',
         },
         nodo: {
-          inicio: '#8B5CF6',
-          yo: '#3B82F6',
-          cliente: '#10B981',
+          inicio: '#6D28D9',
+          yo: '#1D4ED8',
+          cliente: '#047857',
         },
       },
       borderRadius: {

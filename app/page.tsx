@@ -224,9 +224,9 @@ export default function Home() {
               <span
                 className="text-xs px-2.5 py-0.5 rounded-full border font-medium"
                 style={{
-                  background: mode === 'venta' ? '#10B98115' : '#3B82F615',
-                  color: mode === 'venta' ? '#10B981' : '#3B82F6',
-                  borderColor: mode === 'venta' ? '#10B98140' : '#3B82F640',
+                  background: mode === 'venta' ? '#04785715' : '#1D4ED815',
+                  color: mode === 'venta' ? '#047857' : '#1D4ED8',
+                  borderColor: mode === 'venta' ? '#04785740' : '#1D4ED840',
                 }}
               >
                 {mode === 'venta' ? 'Modo Venta' : 'Modo Editor'}
