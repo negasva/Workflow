@@ -16,14 +16,14 @@ const config: Config = {
       },
       colors: {
         brand: {
-          DEFAULT: '#F97316',
-          hover: '#EA580C',
-          soft: '#FFEDD5',
+          DEFAULT: '#D4481A',
+          hover: '#B83A12',
+          soft: '#FAE8E0',
         },
         nodo: {
-          inicio: '#6D28D9',
-          yo: '#1D4ED8',
-          cliente: '#047857',
+          inicio: '#1B3A8C',
+          yo: '#0D6B5A',
+          cliente: '#B83A10',
         },
       },
       borderRadius: {

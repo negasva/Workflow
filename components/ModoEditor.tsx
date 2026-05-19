@@ -35,9 +35,9 @@ interface ModoEditorProps {
 }
 
 const COLOR_MAP: Record<TipoNodo, string> = {
-  inicio: '#6D28D9',  // violet-700
-  yo: '#1D4ED8',      // blue-700
-  cliente: '#047857', // emerald-700
+  inicio: '#1B3A8C',  // Fishwife deep navy
+  yo: '#0D6B5A',      // Fishwife forest teal
+  cliente: '#B83A10', // Fishwife warm red
 }
 
 // Darken a hex color by 15% for drop shadow
