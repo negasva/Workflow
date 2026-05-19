@@ -5,6 +5,7 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  ConnectionMode,
   Node,
   Edge,
   NodeChange,
@@ -39,17 +40,11 @@ const COLOR_MAP: Record<TipoNodo, string> = {
   cliente: '#F97316',
 }
 
-// 'lt' = left-target, 'ls' = left-source, 'rs' = right-source, 'rt' = right-target
-type HandleId = 'lt' | 'ls' | 'rs' | 'rt'
-
-// Flip handle: 'lt' ↔ 'ls', 'rs' ↔ 'rt' (same side, swap type)
-const flipHandle = (h?: string | null): HandleId => {
-  if (!h) return 'lt'
-  if (h === 'lt') return 'ls'
-  if (h === 'ls') return 'lt'
-  if (h === 'rs') return 'rt'
-  if (h === 'rt') return 'rs'
-  return 'lt'
+// Flip handle: left ↔ right (keeps the same side logic but reverses direction)
+const flipHandle = (h?: string | null): string => {
+  if (!h) return 'right'
+  if (h === 'left' || h === 'lt' || h === 'ls') return 'right'
+  return 'left'
 }
 
 // ───────────────────────────────────────────────────────────
@@ -99,30 +94,19 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
           boxSizing: 'border-box',
         }}
       >
-        {/* 4 connection handles per node — bidirectional */}
+        {/* 2 handles per node, both type="source" + connectionMode="loose"
+            allows unlimited connections in any direction */}
         <Handle
-          id="lt"
-          type="target"
-          position={Position.Left}
-          style={{ top: '35%', background: '#666', width: 10, height: 10 }}
-        />
-        <Handle
-          id="ls"
+          id="left"
           type="source"
           position={Position.Left}
-          style={{ top: '70%', background: '#888', width: 8, height: 8 }}
+          style={{ background: '#666', width: 11, height: 11 }}
         />
         <Handle
-          id="rs"
+          id="right"
           type="source"
           position={Position.Right}
-          style={{ top: '35%', background: '#666', width: 10, height: 10 }}
-        />
-        <Handle
-          id="rt"
-          type="target"
-          position={Position.Right}
-          style={{ top: '70%', background: '#888', width: 8, height: 8 }}
+          style={{ background: '#666', width: 11, height: 11 }}
         />
 
         <div
@@ -179,12 +163,19 @@ function buildRFNode(n: Nodo): Node {
 }
 
 function buildRFEdge(c: Conexion): Edge {
+  // Map legacy 4-handle IDs to the new 2-handle system
+  const mapH = (h: string | null | undefined, fallback: string) => {
+    if (!h) return fallback
+    if (h === 'lt' || h === 'ls' || h === 'left') return 'left'
+    if (h === 'rs' || h === 'rt' || h === 'right') return 'right'
+    return fallback
+  }
   return {
     id: c.id,
     source: c.nodo_origen_id,
     target: c.nodo_destino_id,
-    sourceHandle: c.source_handle ?? 'rs',
-    targetHandle: c.target_handle ?? 'lt',
+    sourceHandle: mapH(c.source_handle, 'right'),
+    targetHandle: mapH(c.target_handle, 'left'),
     markerEnd: { type: MarkerType.ArrowClosed, color: '#888' },
     style: { stroke: '#666', strokeWidth: 2 },
   }
@@ -449,8 +440,8 @@ export default function ModoEditor({
           kit_id: kit.id,
           nodo_origen_id: parentId,
           nodo_destino_id: newNodo.id,
-          source_handle: 'rs',
-          target_handle: 'lt',
+          source_handle: 'right',
+          target_handle: 'left',
         })
         .select()
         .single()
@@ -714,6 +705,7 @@ export default function ModoEditor({
         proOptions={{ hideAttribution: true }}
         snapToGrid={snapEnabled}
         snapGrid={[20, 20]}
+        connectionMode={ConnectionMode.Loose}
       >
         <Background color="#2a2a2a" gap={20} />
         <Controls />
@@ -727,7 +719,7 @@ export default function ModoEditor({
             <div className="bg-[#111]/80 backdrop-blur border border-[#222] rounded-xl px-4 py-2 text-xs text-[#666] space-y-1">
               <p>• Botón <span className="text-white">+</span> (esquina sup. der.) → crea nodo hijo</p>
               <p>• Arrastra desde cualquier handle → conexión manual</p>
-              <p>• 4 handles por nodo: dos a cada lado (entrada/salida)</p>
+              <p>• 2 handles por nodo (izq/der) · conexiones ilimitadas</p>
               <p>• Clic en flecha → menú (invertir / eliminar)</p>
               <p>• Arrastra bordes seleccionados → redimensiona · Ctrl+Z deshace</p>
             </div>
