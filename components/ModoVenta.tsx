@@ -167,14 +167,14 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
               {nextNodes.map((node) => {
                 const nc = colorMap[node.tipo] ?? '#555'
                 return (
-                  <button
+                  <div
                     key={node.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleNavigate(node.id)}
-                    className="w-full text-left rounded-xl p-4 transition-all group"
-                    style={{
-                      background: `${nc}10`,
-                      border: `1px solid ${nc}30`,
-                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleNavigate(node.id)}
+                    className="w-full text-left rounded-xl p-4 transition-all group cursor-pointer"
+                    style={{ background: `${nc}10`, border: `1px solid ${nc}30` }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = `${nc}20`
                       e.currentTarget.style.borderColor = `${nc}60`
@@ -184,18 +184,37 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                       e.currentTarget.style.borderColor = `${nc}30`
                     }}
                   >
-                    <div className="flex items-start gap-3">
+                    {/* Header row: badge + copy button */}
+                    <div className="flex items-center justify-between mb-2">
                       <span
-                        className="text-xs font-semibold px-2 py-0.5 rounded-full mt-0.5 shrink-0"
+                        className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0"
                         style={{ background: `${nc}25`, color: nc }}
                       >
-                        {node.tipo === 'yo' ? '👤' : node.tipo === 'inicio' ? '🌟' : '💬'}
+                        {node.tipo === 'yo' ? '👤 Yo' : node.tipo === 'inicio' ? '🌟 Inicio' : '💬 Cliente'}
                       </span>
-                      <span className="text-[#ddd] text-sm leading-relaxed wapp-text whitespace-pre-wrap group-hover:text-white transition-colors">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleCopy(node.texto, node.id)
+                        }}
+                        className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                        style={{
+                          background: copied === node.id ? '#16a34a20' : `${nc}20`,
+                          color: copied === node.id ? '#22c55e' : nc,
+                          border: `1px solid ${copied === node.id ? '#22c55e40' : `${nc}40`}`,
+                        }}
+                      >
+                        {copied === node.id ? '✓ Copiado' : '📋 Copiar'}
+                      </button>
+                    </div>
+
+                    {/* Text + arrow */}
+                    <div className="flex items-start gap-3">
+                      <span className="text-[#ddd] text-sm leading-relaxed wapp-text whitespace-pre-wrap flex-1 group-hover:text-white transition-colors">
                         {renderWappText(node.texto)}
                       </span>
                       <svg
-                        className="w-4 h-4 text-[#555] group-hover:text-[#888] shrink-0 mt-0.5 ml-auto transition-colors"
+                        className="w-4 h-4 text-[#555] group-hover:text-[#888] shrink-0 mt-0.5 transition-colors"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -203,7 +222,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
-                  </button>
+                  </div>
                 )
               })}
             </div>
