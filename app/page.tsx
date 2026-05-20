@@ -74,15 +74,15 @@ export default function Home() {
     loadKits()
   }, [loadKits])
 
-  const loadKitData = useCallback(async (kitId: string) => {
-    setKitLoading(true)
+  const loadKitData = useCallback(async (kitId: string, silent = false) => {
+    if (!silent) setKitLoading(true)
     const [nodosRes, conexionesRes] = await Promise.all([
       supabase.from('nodos').select('*').eq('kit_id', kitId).order('created_at', { ascending: true }),
       supabase.from('conexiones').select('*').eq('kit_id', kitId),
     ])
     setNodos(nodosRes.data ?? [])
     setConexiones(conexionesRes.data ?? [])
-    setKitLoading(false)
+    if (!silent) setKitLoading(false)
   }, [])
 
   useEffect(() => {
@@ -137,7 +137,7 @@ export default function Home() {
   )
 
   const handleDataChange = useCallback(() => {
-    if (selectedKitId) loadKitData(selectedKitId)
+    if (selectedKitId) loadKitData(selectedKitId, true) // silent — no loading spinner
   }, [selectedKitId, loadKitData])
 
   // Global hotkeys: Ctrl+K (search), ? (shortcuts)
