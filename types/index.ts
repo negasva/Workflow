@@ -15,6 +15,7 @@ export interface Nodo {
   posicion_y: number
   ancho?: number
   alto?: number
+  font_size?: number
   created_at: string
 }
 
