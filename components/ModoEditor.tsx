@@ -20,6 +20,7 @@ import ReactFlow, {
   Handle,
   Position,
   Panel,
+  OnSelectionChangeParams,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { NodeResizer } from '@reactflow/node-resizer'
@@ -50,7 +51,38 @@ function darken15(hex: string): string {
   return `rgb(${d(r)}, ${d(g)}, ${d(b)})`
 }
 
-// Flip handle: left ↔ right (keeps the same side logic but reverses direction)
+// Measure how tall a node needs to be to fit its text without clipping
+function measureNodeHeight(text: string, nodeWidth: number): number {
+  if (typeof document === 'undefined') return 80
+  const div = document.createElement('div')
+  div.style.cssText = [
+    'position:absolute',
+    'visibility:hidden',
+    'pointer-events:none',
+    `width:${Math.max(50, nodeWidth - 46)}px`,
+    'font-size:13px',
+    'font-family:Recoleta,system-ui,sans-serif',
+    'font-weight:500',
+    'line-height:1.625',
+    'white-space:pre-wrap',
+    'word-break:break-word',
+  ].join(';')
+  div.innerText = text || ' '
+  document.body.appendChild(div)
+  const h = div.scrollHeight
+  document.body.removeChild(div)
+  return Math.max(60, h + 20)
+}
+
+// Get RF-node pixel dimensions
+function getNodeDims(node: Node): { w: number; h: number } {
+  return {
+    w: (node.style?.width as number) ?? 200,
+    h: (node.style?.height as number) ?? 80,
+  }
+}
+
+// Flip handle: left ↔ right
 const flipHandle = (h?: string | null): string => {
   if (!h) return 'right'
   if (h === 'left' || h === 'lt' || h === 'ls') return 'right'
@@ -58,7 +90,7 @@ const flipHandle = (h?: string | null): string => {
 }
 
 // ───────────────────────────────────────────────────────────
-// Custom node: resize + 4 handles + "+" button (top-right corner)
+// Custom node: resize + handles + "+" and copy buttons
 // ───────────────────────────────────────────────────────────
 interface TattoNodeData {
   label: string
@@ -69,8 +101,35 @@ interface TattoNodeData {
 }
 
 function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
+  const [copied, setCopied] = useState(false)
   const color = data.color
   const shadowColor = darken15(color)
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    try {
+      await navigator.clipboard.writeText(data.label)
+    } catch {
+      const el = document.createElement('textarea')
+      el.value = data.label
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const btnClass = `absolute w-6 h-6 rounded-full text-white flex items-center justify-center z-20 transition-all ${
+    selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+  }`
+  const btnStyle = {
+    background: 'rgba(255,255,255,0.25)',
+    border: '1.5px solid rgba(255,255,255,0.5)',
+    backdropFilter: 'blur(4px)',
+  }
 
   return (
     <>
@@ -102,7 +161,7 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
           fontFamily: 'Recoleta, system-ui, sans-serif',
           fontWeight: 500,
           padding: '10px 14px',
-          paddingRight: 32,
+          paddingRight: 36,
           overflow: 'hidden',
           boxSizing: 'border-box',
           boxShadow: selected
@@ -149,27 +208,43 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
           {data.label}
         </div>
 
-        {/* "+" button */}
+        {/* "+" create child */}
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation()
-            data.onCreateChild(id)
-          }}
-          className={`absolute w-6 h-6 rounded-full text-white text-sm font-bold flex items-center justify-center z-20 transition-all ${
-            selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          }`}
-          style={{
-            top: 6,
-            right: 6,
-            background: 'rgba(255,255,255,0.25)',
-            border: '1.5px solid rgba(255,255,255,0.5)',
-            backdropFilter: 'blur(4px)',
-          }}
+          onClick={(e) => { e.stopPropagation(); data.onCreateChild(id) }}
+          className={`${btnClass} text-sm font-bold`}
+          style={{ top: 6, right: 6, ...btnStyle }}
           title="Crear nodo hijo"
         >
           +
+        </button>
+
+        {/* Copy text */}
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={handleCopy}
+          className={`${btnClass} ${copied ? '!opacity-100' : ''}`}
+          style={{
+            bottom: 6,
+            right: 6,
+            background: copied ? 'rgba(34,197,94,0.45)' : 'rgba(255,255,255,0.25)',
+            border: `1.5px solid ${copied ? 'rgba(34,197,94,0.8)' : 'rgba(255,255,255,0.5)'}`,
+            backdropFilter: 'blur(4px)',
+          }}
+          title={copied ? 'Copiado' : 'Copiar texto'}
+        >
+          {copied ? (
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          ) : (
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          )}
         </button>
       </div>
     </>
@@ -193,7 +268,6 @@ function buildRFNode(n: Nodo): Node {
 }
 
 function buildRFEdge(c: Conexion): Edge {
-  // Map legacy 4-handle IDs to the new 2-handle system
   const mapH = (h: string | null | undefined, fallback: string) => {
     if (!h) return fallback
     if (h === 'lt' || h === 'ls' || h === 'left') return 'left'
@@ -218,10 +292,14 @@ function TextEditor({
   nodoId,
   initialText,
   onChange,
+  autoFocus,
+  onFocused,
 }: {
   nodoId: string
   initialText: string
   onChange: (v: string) => void
+  autoFocus?: boolean
+  onFocused?: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const lastNodoId = useRef<string | null>(null)
@@ -232,6 +310,20 @@ function TextEditor({
       lastNodoId.current = nodoId
     }
   })
+
+  // Auto-focus when double-clicking a node
+  useEffect(() => {
+    if (!autoFocus || !ref.current) return
+    ref.current.focus()
+    const range = document.createRange()
+    const sel = window.getSelection()
+    range.selectNodeContents(ref.current)
+    range.collapse(false)
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    onFocused?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus])
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
@@ -269,19 +361,23 @@ interface NodePanelProps {
   onClose: () => void
   onSave: (id: string, texto: string, tipo: TipoNodo) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  focusEditor?: boolean
+  onEditorFocused?: () => void
 }
 
-function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
+function NodePanel({ nodo, onClose, onSave, onDelete, focusEditor, onEditorFocused }: NodePanelProps) {
   const [texto, setTexto] = useState(nodo?.texto ?? '')
   const [tipo, setTipo] = useState<TipoNodo>(nodo?.tipo ?? 'yo')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     setTexto(nodo?.texto ?? '')
     setTipo(nodo?.tipo ?? 'yo')
     setConfirmDelete(false)
+    setCopied(false)
   }, [nodo?.id])
 
   if (!nodo) return null
@@ -298,6 +394,21 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
     await onDelete(nodo.id)
     setDeleting(false)
     onClose()
+  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(texto)
+    } catch {
+      const el = document.createElement('textarea')
+      el.value = texto
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -347,14 +458,20 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
 
         <div>
           <label className="block text-xs text-app-muted uppercase tracking-wider mb-2 font-semibold">Texto</label>
-          <TextEditor nodoId={nodo.id} initialText={nodo.texto} onChange={setTexto} />
+          <TextEditor
+            nodoId={nodo.id}
+            initialText={nodo.texto}
+            onChange={setTexto}
+            autoFocus={focusEditor}
+            onFocused={onEditorFocused}
+          />
           <p className="text-xs text-app-muted mt-1">Usa *texto* para negrilla · soporta pegar formato</p>
         </div>
 
         <div className="text-xs text-app-muted bg-app-surface-2 border border-app-border rounded-lg px-3 py-2.5 leading-relaxed">
           <span className="inline-flex items-start gap-1.5">
             <svg className="shrink-0 mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Arrastra los bordes del nodo en el canvas para redimensionarlo.
+            Al guardar el nodo se ajusta automáticamente al texto · arrastra los bordes para redimensionar.
           </span>
         </div>
       </div>
@@ -373,6 +490,28 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
             </span>
           )}
         </button>
+
+        {/* Copy text button */}
+        <button
+          onClick={handleCopy}
+          className="w-full py-2.5 text-sm font-semibold transition-all bg-app-surface-2 hover:bg-app-border border border-app-border"
+          style={{ borderRadius: 'var(--radius-btn)', color: copied ? '#22c55e' : 'var(--text-secondary)' }}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            {copied ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Copiado
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copiar texto
+              </>
+            )}
+          </span>
+        </button>
+
         <button
           onClick={handleDelete}
           disabled={deleting}
@@ -410,6 +549,118 @@ function NodePanel({ nodo, onClose, onSave, onDelete }: NodePanelProps) {
 }
 
 // ───────────────────────────────────────────────────────────
+// Alignment toolbar icons
+// ───────────────────────────────────────────────────────────
+function IconAlignLeft() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <rect x="1" y="1" width="1.5" height="18" rx="0.75"/>
+      <rect x="4" y="4" width="9" height="4" rx="1"/>
+      <rect x="4" y="12" width="14" height="4" rx="1"/>
+    </svg>
+  )
+}
+function IconAlignCenterH() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <rect x="9.25" y="1" width="1.5" height="18" rx="0.75"/>
+      <rect x="3" y="4" width="14" height="4" rx="1"/>
+      <rect x="5" y="12" width="10" height="4" rx="1"/>
+    </svg>
+  )
+}
+function IconAlignRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <rect x="17.5" y="1" width="1.5" height="18" rx="0.75"/>
+      <rect x="7" y="4" width="9" height="4" rx="1"/>
+      <rect x="2" y="12" width="14" height="4" rx="1"/>
+    </svg>
+  )
+}
+function IconAlignTop() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <rect x="1" y="1" width="18" height="1.5" rx="0.75"/>
+      <rect x="3" y="4" width="4" height="10" rx="1"/>
+      <rect x="11" y="4" width="4" height="7" rx="1"/>
+    </svg>
+  )
+}
+function IconAlignMiddleV() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <rect x="1" y="9.25" width="18" height="1.5" rx="0.75"/>
+      <rect x="3" y="3" width="4" height="14" rx="1"/>
+      <rect x="11" y="5" width="4" height="10" rx="1"/>
+    </svg>
+  )
+}
+function IconAlignBottom() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <rect x="1" y="17.5" width="18" height="1.5" rx="0.75"/>
+      <rect x="3" y="6" width="4" height="10" rx="1"/>
+      <rect x="11" y="9" width="4" height="7" rx="1"/>
+    </svg>
+  )
+}
+function IconDistribH(props: { anchor: 'start'|'center'|'end' }) {
+  const { anchor } = props
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      {/* Three equally spaced blocks */}
+      <rect x="1" y="6" width="4" height="8" rx="1"/>
+      <rect x="8" y="6" width="4" height="8" rx="1"/>
+      <rect x="15" y="6" width="4" height="8" rx="1"/>
+      {/* Anchor markers */}
+      {anchor === 'start' && <>
+        <rect x="1" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+        <rect x="8" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+        <rect x="15" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+      </>}
+      {anchor === 'center' && <>
+        <rect x="2.5" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+        <rect x="9.5" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+        <rect x="16.5" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+      </>}
+      {anchor === 'end' && <>
+        <rect x="4" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+        <rect x="11" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+        <rect x="18" y="4" width="1" height="12" rx="0.5" opacity="0.5"/>
+      </>}
+    </svg>
+  )
+}
+function IconDistribV(props: { anchor: 'start'|'center'|'end' }) {
+  const { anchor } = props
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      {/* Three equally spaced blocks */}
+      <rect x="6" y="1" width="8" height="4" rx="1"/>
+      <rect x="6" y="8" width="8" height="4" rx="1"/>
+      <rect x="6" y="15" width="8" height="4" rx="1"/>
+      {/* Anchor markers */}
+      {anchor === 'start' && <>
+        <rect x="4" y="1" width="12" height="1" rx="0.5" opacity="0.5"/>
+        <rect x="4" y="8" width="12" height="1" rx="0.5" opacity="0.5"/>
+        <rect x="4" y="15" width="12" height="1" rx="0.5" opacity="0.5"/>
+      </>}
+      {anchor === 'center' && <>
+        <rect x="4" y="2.5" width="12" height="1" rx="0.5" opacity="0.5"/>
+        <rect x="4" y="9.5" width="12" height="1" rx="0.5" opacity="0.5"/>
+        <rect x="4" y="16.5" width="12" height="1" rx="0.5" opacity="0.5"/>
+      </>}
+      {anchor === 'end' && <>
+        <rect x="4" y="4" width="12" height="1" rx="0.5" opacity="0.5"/>
+        <rect x="4" y="11" width="12" height="1" rx="0.5" opacity="0.5"/>
+        <rect x="4" y="18" width="12" height="1" rx="0.5" opacity="0.5"/>
+      </>}
+    </svg>
+  )
+}
+
+// ───────────────────────────────────────────────────────────
 // Main editor
 // ───────────────────────────────────────────────────────────
 type UndoEntry = { id: string; x: number; y: number }
@@ -425,8 +676,9 @@ export default function ModoEditor({
   const [rfEdges, setRfEdges] = useState<Edge[]>(initialConexiones.map(buildRFEdge))
   const [selectedNodo, setSelectedNodo] = useState<Nodo | null>(null)
   const [nodos, setNodos] = useState<Nodo[]>(initialNodos)
+  const [selectedNodes, setSelectedNodes] = useState<Node[]>([])
+  const [focusEditor, setFocusEditor] = useState(false)
 
-  // Edge floating menu (CAMBIO 3)
   const [edgeMenu, setEdgeMenu] = useState<EdgeMenu | null>(null)
 
   // Undo
@@ -464,14 +716,19 @@ export default function ModoEditor({
     return rf
   }, [])
 
+  // Only reset editor when the kit changes (the component is re-keyed on kit.id by the parent,
+  // so this effect runs once on mount). Excluding initialNodos/conexiones from deps prevents
+  // the editor from resetting every time onDataChange triggers a refetch in page.tsx.
   useEffect(() => {
     setNodos(initialNodos)
     setRfNodes(initialNodos.map(buildNodeWithCallbacks))
     setRfEdges(initialConexiones.map(buildRFEdge))
     setSelectedNodo(null)
+    setSelectedNodes([])
     setUndoHistory([])
     setEdgeMenu(null)
-  }, [kit.id, initialNodos, initialConexiones, buildNodeWithCallbacks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kit.id])
 
   // Click "+" → create child node + connection
   useEffect(() => {
@@ -541,7 +798,7 @@ export default function ModoEditor({
     }
   }, [])
 
-  // Ctrl+Z undo / Escape closes menu
+  // Ctrl+Z undo / Escape closes menus
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -604,7 +861,7 @@ export default function ModoEditor({
       .eq('id', node.id)
   }, [])
 
-  // Manual connection (drag from handle) — tolerates missing handle columns
+  // Manual connection
   const onConnect = useCallback(
     async (connection: Connection) => {
       if (!connection.source || !connection.target) return
@@ -615,8 +872,6 @@ export default function ModoEditor({
         nodo_destino_id: connection.target,
       }
 
-      // Try with handle columns first; if the migration hasn't been run, retry
-      // without them so connections still work.
       let { data, error } = await supabase
         .from('conexiones')
         .insert({
@@ -654,7 +909,6 @@ export default function ModoEditor({
     [kit.id]
   )
 
-  // CAMBIO 3: edge click → floating menu
   const onEdgeClick = useCallback((e: React.MouseEvent, edge: Edge) => {
     e.stopPropagation()
     setEdgeMenu({ x: e.clientX, y: e.clientY, edgeId: edge.id })
@@ -664,7 +918,6 @@ export default function ModoEditor({
     setEdgeMenu(null)
   }, [])
 
-  // CAMBIO 3: flip edge direction (swap source/target + flip handles)
   const handleFlipEdge = useCallback(async () => {
     if (!edgeMenu) return
     const edge = rfEdges.find((e) => e.id === edgeMenu.edgeId)
@@ -694,13 +947,7 @@ export default function ModoEditor({
     setRfEdges((eds) =>
       eds.map((e) =>
         e.id === edge.id
-          ? {
-              ...e,
-              source: newSource,
-              target: newTarget,
-              sourceHandle: newSourceHandle,
-              targetHandle: newTargetHandle,
-            }
+          ? { ...e, source: newSource, target: newTarget, sourceHandle: newSourceHandle, targetHandle: newTargetHandle }
           : e
       )
     )
@@ -714,8 +961,10 @@ export default function ModoEditor({
     setEdgeMenu(null)
   }, [edgeMenu])
 
+  // Single click → open edit panel (not on shift-click, which is multi-select)
   const onNodeClick: NodeMouseHandler = useCallback(
-    (_, node) => {
+    (e, node) => {
+      if (e.shiftKey) return
       const nodo = nodos.find((n) => n.id === node.id)
       setSelectedNodo(nodo ?? null)
       setEdgeMenu(null)
@@ -723,17 +972,42 @@ export default function ModoEditor({
     [nodos]
   )
 
+  // Double click → open edit panel and focus the text editor
+  const onNodeDoubleClick: NodeMouseHandler = useCallback(
+    (_, node) => {
+      const nodo = nodos.find((n) => n.id === node.id)
+      setSelectedNodo(nodo ?? null)
+      setEdgeMenu(null)
+      setFocusEditor(true)
+    },
+    [nodos]
+  )
+
+  // Track multi-selection for alignment toolbar
+  const onSelectionChange = useCallback(({ nodes }: OnSelectionChangeParams) => {
+    setSelectedNodes(nodes)
+    if (nodes.length >= 2) {
+      setSelectedNodo(null) // Close edit panel when multi-selecting
+    }
+  }, [])
+
   const handleSaveNodo = useCallback(
     async (id: string, texto: string, tipo: TipoNodo) => {
+      const nodeData = nodos.find((n) => n.id === id)
+      const nodeWidth = nodeData?.ancho ?? 200
+      const newHeight = measureNodeHeight(texto, nodeWidth)
+
       const { error } = await supabase
         .from('nodos')
-        .update({ texto, tipo })
+        .update({ texto, tipo, alto: newHeight })
         .eq('id', id)
       if (!error) {
-        const updated = nodos.map((n) => (n.id === id ? { ...n, texto, tipo } : n))
+        const updated = nodos.map((n) =>
+          n.id === id ? { ...n, texto, tipo, alto: newHeight } : n
+        )
         setNodos(updated)
         setRfNodes(updated.map(buildNodeWithCallbacks))
-        setSelectedNodo((sn) => (sn?.id === id ? { ...sn, texto, tipo } : sn))
+        setSelectedNodo((sn) => (sn?.id === id ? { ...sn, texto, tipo, alto: newHeight } : sn))
         onDataChange()
       }
     },
@@ -775,7 +1049,108 @@ export default function ModoEditor({
     }
   }, [kit.id, nodos, onDataChange, buildNodeWithCallbacks])
 
+  // ── Alignment ──────────────────────────────────────────────
+  const alignSelected = useCallback(async (type: 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom') => {
+    if (selectedNodes.length < 2) return
+
+    const updates = selectedNodes.map((node) => {
+      const { w, h } = getNodeDims(node)
+      let x = node.position.x
+      let y = node.position.y
+
+      if (type === 'left') {
+        x = Math.min(...selectedNodes.map((n) => n.position.x))
+      } else if (type === 'centerH') {
+        const avg = selectedNodes.reduce((s, n) => s + n.position.x + getNodeDims(n).w / 2, 0) / selectedNodes.length
+        x = avg - w / 2
+      } else if (type === 'right') {
+        const maxRight = Math.max(...selectedNodes.map((n) => n.position.x + getNodeDims(n).w))
+        x = maxRight - w
+      } else if (type === 'top') {
+        y = Math.min(...selectedNodes.map((n) => n.position.y))
+      } else if (type === 'centerV') {
+        const avg = selectedNodes.reduce((s, n) => s + n.position.y + getNodeDims(n).h / 2, 0) / selectedNodes.length
+        y = avg - h / 2
+      } else if (type === 'bottom') {
+        const maxBottom = Math.max(...selectedNodes.map((n) => n.position.y + getNodeDims(n).h))
+        y = maxBottom - h
+      }
+
+      return { id: node.id, x, y }
+    })
+
+    setRfNodes((prev) => prev.map((n) => {
+      const u = updates.find((u) => u.id === n.id)
+      return u ? { ...n, position: { x: u.x, y: u.y } } : n
+    }))
+    setNodos((prev) => prev.map((n) => {
+      const u = updates.find((u) => u.id === n.id)
+      return u ? { ...n, posicion_x: u.x, posicion_y: u.y } : n
+    }))
+
+    for (const u of updates) {
+      await supabase.from('nodos').update({ posicion_x: u.x, posicion_y: u.y }).eq('id', u.id)
+    }
+  }, [selectedNodes])
+
+  // ── Distribution ───────────────────────────────────────────
+  const distributeSelected = useCallback(async (axis: 'x' | 'y', anchor: 'start' | 'center' | 'end') => {
+    if (selectedNodes.length < 2) return
+
+    const getAnchor = (node: Node): number => {
+      const { w, h } = getNodeDims(node)
+      if (axis === 'x') {
+        if (anchor === 'start') return node.position.x
+        if (anchor === 'center') return node.position.x + w / 2
+        return node.position.x + w
+      }
+      if (anchor === 'start') return node.position.y
+      if (anchor === 'center') return node.position.y + h / 2
+      return node.position.y + h
+    }
+
+    const sorted = [...selectedNodes].sort((a, b) => getAnchor(a) - getAnchor(b))
+    const minA = getAnchor(sorted[0])
+    const maxA = getAnchor(sorted[sorted.length - 1])
+    const step = sorted.length > 1 ? (maxA - minA) / (sorted.length - 1) : 0
+
+    const updates = sorted.map((node, i) => {
+      const target = minA + i * step
+      const { w, h } = getNodeDims(node)
+      let x = node.position.x
+      let y = node.position.y
+      if (axis === 'x') {
+        x = anchor === 'start' ? target : anchor === 'center' ? target - w / 2 : target - w
+      } else {
+        y = anchor === 'start' ? target : anchor === 'center' ? target - h / 2 : target - h
+      }
+      return { id: node.id, x, y }
+    })
+
+    setRfNodes((prev) => prev.map((n) => {
+      const u = updates.find((u) => u.id === n.id)
+      return u ? { ...n, position: { x: u.x, y: u.y } } : n
+    }))
+    setNodos((prev) => prev.map((n) => {
+      const u = updates.find((u) => u.id === n.id)
+      return u ? { ...n, posicion_x: u.x, posicion_y: u.y } : n
+    }))
+
+    for (const u of updates) {
+      await supabase.from('nodos').update({ posicion_x: u.x, posicion_y: u.y }).eq('id', u.id)
+    }
+  }, [selectedNodes])
+
   const nodeTypes = useMemo(() => ({ tatto: TattoNode }), [])
+
+  const toolbarBtnClass = (disabled = false) =>
+    `w-8 h-8 flex items-center justify-center rounded-lg border transition-all ${
+      disabled
+        ? 'opacity-30 cursor-not-allowed border-transparent text-app-muted'
+        : 'border-app-border text-app-muted hover:text-app-text hover:bg-app-surface-2 hover:border-brand/40 hover:shadow-soft active:scale-95'
+    }`
+
+  const canDistrib = selectedNodes.length >= 3
 
   return (
     <div className="flex-1 relative h-full">
@@ -787,6 +1162,8 @@ export default function ModoEditor({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onNodeDoubleClick={onNodeDoubleClick}
+        onSelectionChange={onSelectionChange}
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         onNodeDragStart={onNodeDragStart}
@@ -817,10 +1194,10 @@ export default function ModoEditor({
                 color: 'var(--text-muted)',
               }}
             >
-              <p>• Botón <span className="text-app-text font-semibold">+</span> (esquina sup. der.) → crea nodo hijo</p>
+              <p>• Doble clic en un nodo → editar texto</p>
+              <p>• Botón <span className="text-app-text font-semibold">+</span> (esquina sup.) → crea nodo hijo · botón copiar (esquina inf.)</p>
               <p>• Arrastra desde cualquier handle → conexión manual</p>
-              <p>• 2 handles por nodo (izq/der) · conexiones ilimitadas</p>
-              <p>• Clic en flecha → menú (invertir / eliminar)</p>
+              <p>• Shift+clic o selección múltiple → herramientas de alineación</p>
               <p>• Arrastra bordes seleccionados → redimensiona · Ctrl+Z deshace</p>
             </div>
             <button
@@ -841,6 +1218,82 @@ export default function ModoEditor({
           </div>
         </Panel>
 
+        {/* Alignment & distribution toolbar — shown when 2+ nodes are selected */}
+        {selectedNodes.length >= 2 && (
+          <Panel position="top-center">
+            <div
+              className="flex gap-4 items-start px-4 py-3 rounded-xl border shadow-drop backdrop-blur"
+              style={{
+                background: 'color-mix(in srgb, var(--bg-surface) 92%, transparent)',
+                borderColor: 'var(--border)',
+              }}
+            >
+              {/* Align */}
+              <div className="flex flex-col gap-1.5">
+                <p className="text-xs text-app-muted font-medium text-center leading-none">Alinear</p>
+                <div className="flex gap-1">
+                  <button onClick={() => alignSelected('left')} className={toolbarBtnClass()} title="Alinear bordes izquierdos">
+                    <IconAlignLeft />
+                  </button>
+                  <button onClick={() => alignSelected('centerH')} className={toolbarBtnClass()} title="Centrar horizontalmente">
+                    <IconAlignCenterH />
+                  </button>
+                  <button onClick={() => alignSelected('right')} className={toolbarBtnClass()} title="Alinear bordes derechos">
+                    <IconAlignRight />
+                  </button>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => alignSelected('top')} className={toolbarBtnClass()} title="Alinear bordes superiores">
+                    <IconAlignTop />
+                  </button>
+                  <button onClick={() => alignSelected('centerV')} className={toolbarBtnClass()} title="Centrar verticalmente">
+                    <IconAlignMiddleV />
+                  </button>
+                  <button onClick={() => alignSelected('bottom')} className={toolbarBtnClass()} title="Alinear bordes inferiores">
+                    <IconAlignBottom />
+                  </button>
+                </div>
+              </div>
+
+              <div className="w-px self-stretch bg-app-border" />
+
+              {/* Distribute */}
+              <div className="flex flex-col gap-1.5">
+                <p className="text-xs text-app-muted font-medium text-center leading-none">
+                  Distribuir {!canDistrib && <span className="opacity-50">(3+ nodos)</span>}
+                </p>
+                <div className="flex gap-1">
+                  <button onClick={() => distributeSelected('x', 'start')} disabled={!canDistrib} className={toolbarBtnClass(!canDistrib)} title="Distribuir bordes izquierdos">
+                    <IconDistribH anchor="start" />
+                  </button>
+                  <button onClick={() => distributeSelected('x', 'center')} disabled={!canDistrib} className={toolbarBtnClass(!canDistrib)} title="Distribuir centros horizontalmente">
+                    <IconDistribH anchor="center" />
+                  </button>
+                  <button onClick={() => distributeSelected('x', 'end')} disabled={!canDistrib} className={toolbarBtnClass(!canDistrib)} title="Distribuir bordes derechos">
+                    <IconDistribH anchor="end" />
+                  </button>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => distributeSelected('y', 'start')} disabled={!canDistrib} className={toolbarBtnClass(!canDistrib)} title="Distribuir bordes superiores">
+                    <IconDistribV anchor="start" />
+                  </button>
+                  <button onClick={() => distributeSelected('y', 'center')} disabled={!canDistrib} className={toolbarBtnClass(!canDistrib)} title="Distribuir centros verticalmente">
+                    <IconDistribV anchor="center" />
+                  </button>
+                  <button onClick={() => distributeSelected('y', 'end')} disabled={!canDistrib} className={toolbarBtnClass(!canDistrib)} title="Distribuir bordes inferiores">
+                    <IconDistribV anchor="end" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Selection count badge */}
+              <div className="self-center text-xs font-semibold text-brand bg-brand/10 border border-brand/20 rounded-full px-2 py-0.5 whitespace-nowrap">
+                {selectedNodes.length} nodos
+              </div>
+            </div>
+          </Panel>
+        )}
+
         <Panel position="bottom-right">
           <button
             onClick={handleAddNodo}
@@ -853,7 +1306,7 @@ export default function ModoEditor({
         </Panel>
       </ReactFlow>
 
-      {/* CAMBIO 3: floating edge menu */}
+      {/* Floating edge menu */}
       {edgeMenu && (
         <div
           className="fixed border z-50 flex gap-1 p-1"
@@ -889,6 +1342,8 @@ export default function ModoEditor({
         onClose={() => setSelectedNodo(null)}
         onSave={handleSaveNodo}
         onDelete={handleDeleteNodo}
+        focusEditor={focusEditor}
+        onEditorFocused={() => setFocusEditor(false)}
       />
     </div>
   )
