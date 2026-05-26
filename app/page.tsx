@@ -116,6 +116,66 @@ export default function Home() {
     setSidebarOpen(true)
   }, [kits.length, loadKits])
 
+  const handleDuplicateKit = useCallback(async (id: string) => {
+    const sourceKit = kits.find((k) => k.id === id)
+    if (!sourceKit) return
+
+    const [sourceNodosRes, sourceConexionesRes] = await Promise.all([
+      supabase.from('nodos').select('*').eq('kit_id', id).order('created_at', { ascending: true }),
+      supabase.from('conexiones').select('*').eq('kit_id', id),
+    ])
+
+    const sourceNodos = sourceNodosRes.data ?? []
+    const sourceConexiones = sourceConexionesRes.data ?? []
+    if (sourceNodos.length === 0) return
+
+    const baseName = sourceKit.nombre.trim() || 'Kit'
+    const nombre = `${baseName} (copia)`
+    const { data: newKit, error: kitError } = await supabase
+      .from('kits')
+      .insert({ nombre })
+      .select()
+      .single()
+    if (kitError || !newKit) return
+
+    const idMap = new Map<string, string>()
+    for (const nodo of sourceNodos) {
+      const { data: inserted, error } = await supabase
+        .from('nodos')
+        .insert({
+          kit_id: newKit.id,
+          tipo: nodo.tipo,
+          texto: nodo.texto,
+          posicion_x: nodo.posicion_x,
+          posicion_y: nodo.posicion_y,
+          ancho: nodo.ancho,
+          alto: nodo.alto,
+          font_size: nodo.font_size,
+        })
+        .select()
+        .single()
+      if (error || !inserted) return
+      idMap.set(nodo.id, inserted.id)
+    }
+
+    for (const conexion of sourceConexiones) {
+      const nodo_origen_id = idMap.get(conexion.nodo_origen_id)
+      const nodo_destino_id = idMap.get(conexion.nodo_destino_id)
+      if (!nodo_origen_id || !nodo_destino_id) continue
+      await supabase.from('conexiones').insert({
+        kit_id: newKit.id,
+        nodo_origen_id,
+        nodo_destino_id,
+        source_handle: conexion.source_handle,
+        target_handle: conexion.target_handle,
+      })
+    }
+
+    await loadKits()
+    setSelectedKitId(newKit.id)
+    setSidebarOpen(true)
+  }, [kits, loadKits])
+
   const handleDeleteKit = useCallback(
     async (id: string) => {
       await supabase.from('kits').delete().eq('id', id)
@@ -200,6 +260,7 @@ export default function Home() {
           selectedKitId={selectedKitId}
           onSelectKit={handleSelectKit}
           onAddKit={handleAddKit}
+          onDuplicateKit={handleDuplicateKit}
           onDeleteKit={handleDeleteKit}
           onRenameKit={handleRenameKit}
         />

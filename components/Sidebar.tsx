@@ -8,6 +8,7 @@ interface SidebarProps {
   selectedKitId: string | null
   onSelectKit: (id: string) => void
   onAddKit: () => void
+  onDuplicateKit: (id: string) => void
   onDeleteKit: (id: string) => void
   onRenameKit: (id: string, nombre: string) => void
 }
@@ -17,6 +18,7 @@ export default function Sidebar({
   selectedKitId,
   onSelectKit,
   onAddKit,
+  onDuplicateKit,
   onDeleteKit,
   onRenameKit,
 }: SidebarProps) {
@@ -101,6 +103,19 @@ export default function Sidebar({
                       <span className="text-sm font-medium truncate">{kit.nombre}</span>
                     </div>
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDuplicateKit(kit.id)
+                        }}
+                        className="p-1 rounded hover:bg-app-border text-app-muted hover:text-app-text transition-colors"
+                        title="Duplicar kit"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h10M8 11h10M8 15h6" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5h12a2 2 0 012 2v12H8a2 2 0 01-2-2V5z" />
+                        </svg>
+                      </button>
                       <button
                         onClick={(e) => handleRenameStart(e, kit)}
                         className="p-1 rounded hover:bg-app-border text-app-muted hover:text-app-text transition-colors"

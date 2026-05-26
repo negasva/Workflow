@@ -42,6 +42,8 @@ const COLOR_MAP: Record<TipoNodo, string> = {
 }
 
 const FONT_SIZES = [11, 13, 15, 17, 20]
+const KIT_PRICE_RE = /\^(\s*\$[\d.,]+)\^/
+const ANY_PRICE_RE = /\^?\$[\d.,]+\^?/g
 
 function darken15(hex: string): string {
   const m = hex.replace('#', '')
@@ -73,6 +75,19 @@ function measureNodeHeight(text: string, nodeWidth: number, fontSize = 13): numb
   const h = div.scrollHeight
   document.body.removeChild(div)
   return Math.max(60, h + 20)
+}
+
+function extractKitPrice(text: string): string | null {
+  const match = text.match(KIT_PRICE_RE)
+  return match ? match[1].trim() : null
+}
+
+function syncKitPrice(text: string, price: string): string {
+  return text.replace(ANY_PRICE_RE, price)
+}
+
+function hasPriceToken(text: string): boolean {
+  return /\^?\$[\d.,]+\^?/.test(text)
 }
 
 // Get RF-node pixel dimensions
@@ -355,12 +370,13 @@ interface NodePanelProps {
   onClose: () => void
   onSave: (id: string, texto: string, tipo: TipoNodo, fontSize: number) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  onSyncKitPrice: (price: string) => Promise<{ updated: number; skipped: number } | null>
   onLiveEdit?: (texto: string) => void
   focusEditor?: boolean
   onEditorFocused?: () => void
 }
 
-function NodePanel({ nodo, onClose, onSave, onDelete, onLiveEdit, focusEditor, onEditorFocused }: NodePanelProps) {
+function NodePanel({ nodo, onClose, onSave, onDelete, onSyncKitPrice, onLiveEdit, focusEditor, onEditorFocused }: NodePanelProps) {
   const [texto, setTexto] = useState(nodo?.texto ?? '')
   const [tipo, setTipo] = useState<TipoNodo>(nodo?.tipo ?? 'yo')
   const [fontSize, setFontSize] = useState<number>(nodo?.font_size ?? 13)
@@ -368,6 +384,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onLiveEdit, focusEditor, o
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [syncingPrice, setSyncingPrice] = useState(false)
 
   useEffect(() => {
     setTexto(nodo?.texto ?? '')
@@ -375,6 +392,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onLiveEdit, focusEditor, o
     setFontSize(nodo?.font_size ?? 13)
     setConfirmDelete(false)
     setCopied(false)
+    setSyncingPrice(false)
   }, [nodo?.id])
 
   if (!nodo) return null
@@ -406,6 +424,14 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onLiveEdit, focusEditor, o
     }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleSyncPrice = async () => {
+    const price = extractKitPrice(texto)
+    if (!price) return
+    setSyncingPrice(true)
+    await onSyncKitPrice(price)
+    setSyncingPrice(false)
   }
 
   return (
@@ -498,6 +524,20 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onLiveEdit, focusEditor, o
       </div>
 
       <div className="p-5 border-t border-app-border space-y-2">
+        {nodo.tipo === 'inicio' && (
+          <button
+            onClick={handleSyncPrice}
+            disabled={syncingPrice || !extractKitPrice(texto)}
+            className="w-full py-2.5 text-sm font-semibold transition-all bg-app-surface-2 hover:bg-app-border border border-app-border disabled:opacity-50"
+            style={{ borderRadius: 'var(--radius-btn)' }}
+            title="Busca un precio encerrado entre ^ ^ en el nodo inicio y lo aplica a todos los nodos YO/CLIENTE del kit"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/><circle cx="12" cy="12" r="9"/></svg>
+              {syncingPrice ? 'Sincronizando precio...' : 'Aplicar precio del kit'}
+            </span>
+          </button>
+        )}
         <button
           onClick={handleSave}
           disabled={saving}
@@ -867,6 +907,56 @@ export default function ModoEditor({
     [nodos, onDataChange]
   )
 
+  const handleSyncKitPrice = useCallback(
+    async (price: string) => {
+      const startNode = nodos.find((n) => n.tipo === 'inicio')
+      if (!startNode) return null
+
+      const targetNodos = nodos.filter((n) => n.id !== startNode.id && (n.tipo === 'yo' || n.tipo === 'cliente'))
+      let updated = 0
+      let skipped = 0
+
+      const nextById = new Map<string, string>()
+      for (const nodo of targetNodos) {
+        if (!hasPriceToken(nodo.texto)) {
+          skipped += 1
+          continue
+        }
+        const nextText = syncKitPrice(nodo.texto, price)
+        if (nextText === nodo.texto) {
+          skipped += 1
+          continue
+        }
+        nextById.set(nodo.id, nextText)
+      }
+
+      if (nextById.size === 0) return { updated: 0, skipped }
+
+      const updates = [...nextById.entries()].map(([id, texto]) =>
+        supabase.from('nodos').update({ texto }).eq('id', id)
+      )
+      await Promise.all(updates)
+
+      setNodos((prev) =>
+        prev.map((n) => {
+          const nextText = nextById.get(n.id)
+          return nextText ? { ...n, texto: nextText } : n
+        })
+      )
+      setRfNodes((prev) =>
+        prev.map((n) => {
+          const nextText = nextById.get(n.id)
+          return nextText ? { ...n, data: { ...n.data, label: nextText } } : n
+        })
+      )
+
+      onDataChange()
+      updated = nextById.size
+      return { updated, skipped }
+    },
+    [nodos, onDataChange]
+  )
+
   const handleDeleteNodo = useCallback(
     async (id: string) => {
       await supabase.from('nodos').delete().eq('id', id)
@@ -1099,6 +1189,7 @@ export default function ModoEditor({
         onClose={() => setSelectedNodo(null)}
         onSave={handleSaveNodo}
         onDelete={handleDeleteNodo}
+        onSyncKitPrice={handleSyncKitPrice}
         onLiveEdit={handleLiveEdit}
         focusEditor={focusEditor}
         onEditorFocused={() => setFocusEditor(false)}

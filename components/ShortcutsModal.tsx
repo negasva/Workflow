@@ -9,13 +9,15 @@ interface ShortcutsModalProps {
 
 const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['Ctrl', 'K'], label: 'Buscar nodo' },
-  { keys: ['Ctrl', 'Z'], label: 'Deshacer último movimiento' },
+  { keys: ['Ctrl', 'Z'], label: 'Deshacer ultimo movimiento' },
   { keys: ['?'], label: 'Abrir atajos' },
-  { keys: ['Esc'], label: 'Cerrar menús / modales' },
+  { keys: ['Esc'], label: 'Cerrar menus / modales' },
   { keys: ['Del'], label: 'Eliminar nodo seleccionado' },
   { keys: ['Click +'], label: 'Crear nodo hijo conectado' },
-  { keys: ['Drag handle'], label: 'Crear conexión manual' },
-  { keys: ['Click edge'], label: 'Menú: invertir / eliminar' },
+  { keys: ['Drag handle'], label: 'Crear conexion manual' },
+  { keys: ['Click edge'], label: 'Menu: invertir / eliminar' },
+  { keys: ['Boton'], label: 'Duplicar kit desde la lista' },
+  { keys: ['Inicio'], label: 'Aplicar precio del kit desde el nodo inicio' },
 ]
 
 export default function ShortcutsModal({ open, onClose }: ShortcutsModalProps) {
