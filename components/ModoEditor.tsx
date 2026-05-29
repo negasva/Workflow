@@ -936,23 +936,22 @@ export default function ModoEditor({
       const nodeWidth = nodeData?.ancho ?? 200
       const newHeight = measureNodeHeight(texto, nodeWidth, fontSize)
 
-      // Save core fields (always present columns)
-      const { error } = await supabase.from('nodos').update({ texto, tipo, alto: newHeight, color }).eq('id', id)
-      if (!error) {
-        // Best-effort: save font_size (requires DB migration if column doesn't exist yet)
-        // ALTER TABLE nodos ADD COLUMN IF NOT EXISTS font_size integer DEFAULT 13;
-        supabase.from('nodos').update({ font_size: fontSize }).eq('id', id).then(() => {})
+      // Save core fields first, then optional fields best-effort.
+      const coreUpdate = await supabase.from('nodos').update({ texto, tipo, alto: newHeight }).eq('id', id)
+      if (coreUpdate.error) return
 
-        // Surgical update: only patch the changed node, preserving all others' positions
-        setNodos((prev) => prev.map((n) => n.id === id ? { ...n, texto, tipo, alto: newHeight, font_size: fontSize, color } : n))
-        setRfNodes((prev) => prev.map((n) =>
-          n.id === id
-            ? { ...n, data: { ...n.data, label: texto, tipo, color, fontSize }, style: { ...n.style, height: newHeight } }
-            : n
-        ))
-        setSelectedNodo((sn) => sn?.id === id ? { ...sn, texto, tipo, alto: newHeight, font_size: fontSize, color } : sn)
-        onDataChange()
-      }
+      try { await supabase.from('nodos').update({ font_size: fontSize }).eq('id', id) } catch { /* ignore */ }
+      try { await supabase.from('nodos').update({ color }).eq('id', id) } catch { /* ignore */ }
+
+      // Surgical update: only patch the changed node, preserving all others' positions
+      setNodos((prev) => prev.map((n) => n.id === id ? { ...n, texto, tipo, alto: newHeight, font_size: fontSize, color } : n))
+      setRfNodes((prev) => prev.map((n) =>
+        n.id === id
+          ? { ...n, data: { ...n.data, label: texto, tipo, color, fontSize }, style: { ...n.style, height: newHeight } }
+          : n
+      ))
+      setSelectedNodo((sn) => sn?.id === id ? { ...sn, texto, tipo, alto: newHeight, font_size: fontSize, color } : sn)
+      onDataChange()
     },
     [nodos, onDataChange]
   )
@@ -1029,24 +1028,25 @@ export default function ModoEditor({
       .select().single()
     if (!error && data) {
       const originId = data.id
-      await supabase.from('nodos').update({ origin_id: originId }).eq('id', data.id)
+      try { await supabase.from('nodos').update({ origin_id: originId }).eq('id', data.id) } catch { /* ignore */ }
       const nodeWithOrigin = { ...data, origin_id: originId }
       setNodos((prev) => [...prev, nodeWithOrigin])
       setRfNodes((prev) => [...prev, buildNodeWithCallbacks(nodeWithOrigin)])
       if (isBaseKit) {
         await Promise.all(allKits.filter((k) => k.id !== kit.id).map(async (k) => {
-          await supabase.from('nodos').insert({
-            kit_id: k.id,
-            origin_id: originId,
-            tipo: data.tipo,
-            texto: data.texto,
-            posicion_x: x,
-            posicion_y: y,
-            ancho: data.ancho ?? 200,
-            alto: data.alto ?? 80,
-            font_size: data.font_size ?? 13,
-            color: data.color ?? COLOR_MAP[data.tipo as TipoNodo],
-          })
+          try {
+            await supabase.from('nodos').insert({
+              kit_id: k.id,
+              tipo: data.tipo,
+              texto: data.texto,
+              posicion_x: x,
+              posicion_y: y,
+              ancho: data.ancho ?? 200,
+              alto: data.alto ?? 80,
+              font_size: data.font_size ?? 13,
+              color: data.color ?? COLOR_MAP[data.tipo as TipoNodo],
+            })
+          } catch { /* ignore */ }
         }))
       }
       onDataChange()
