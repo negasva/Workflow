@@ -33,6 +33,7 @@ export default function Home() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [accessGranted, setAccessGranted] = useState(false)
+  const [kitsOrderByGroup, setKitsOrderByGroup] = useState(false)
   const [accessKeyInput, setAccessKeyInput] = useState('')
   const [accessError, setAccessError] = useState(false)
 
@@ -237,6 +238,22 @@ export default function Home() {
     []
   )
 
+  const handleMoveKit = useCallback((draggedId: string, targetId: string) => {
+    setKits((current) => {
+      const next = [...current]
+      const from = next.findIndex((k) => k.id === draggedId)
+      const to = next.findIndex((k) => k.id === targetId)
+      if (from < 0 || to < 0 || from === to) return current
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+  }, [])
+
+  const handleToggleKitsOrder = useCallback(() => {
+    setKitsOrderByGroup((v) => !v)
+  }, [])
+
   const handleDataChange = useCallback(() => {
     if (selectedKitId) loadKitData(selectedKitId, true) // silent — no loading spinner
   }, [selectedKitId, loadKitData])
@@ -262,8 +279,6 @@ export default function Home() {
 
   const handleSearchSelect = useCallback((nodoId: string) => {
     setMode('editor')
-    // ModoEditor's fitView will show the canvas; user clicks node to focus.
-    // We could highlight further but keep it simple for now.
     void nodoId
   }, [])
 
@@ -304,6 +319,9 @@ export default function Home() {
           onDuplicateKit={handleDuplicateKit}
           onDeleteKit={handleDeleteKit}
           onRenameKit={handleRenameKit}
+          onMoveKit={handleMoveKit}
+          orderByGroup={kitsOrderByGroup}
+          onToggleOrderByGroup={handleToggleKitsOrder}
         />
       )}
 

@@ -40,6 +40,7 @@ const COLOR_MAP: Record<TipoNodo, string> = {
   yo: '#0D6B5A',
   cliente: '#B83A10',
 }
+const COLOR_PRESETS = ['#1B3A8C', '#0D6B5A', '#B83A10', '#8A4FFF', '#0F766E', '#F97316', '#334155']
 
 const FONT_SIZES = [11, 13, 15, 17, 20]
 const KIT_PRICE_RE = /\^(\s*\$[\d.,]+)\^/
@@ -267,7 +268,7 @@ function TattoNode({ id, data, selected }: NodeProps<TattoNodeData>) {
 // Build helpers
 // ───────────────────────────────────────────────────────────
 function buildRFNode(n: Nodo): Node {
-  const color = COLOR_MAP[n.tipo] ?? '#555'
+  const color = n.color ?? COLOR_MAP[n.tipo] ?? '#555'
   return {
     id: n.id,
     type: 'tatto',
@@ -368,7 +369,7 @@ function TextEditor({
 interface NodePanelProps {
   nodo: Nodo | null
   onClose: () => void
-  onSave: (id: string, texto: string, tipo: TipoNodo, fontSize: number) => Promise<void>
+  onSave: (id: string, texto: string, tipo: TipoNodo, fontSize: number, color: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onSyncKitPrice: (price: string) => Promise<{ updated: number; skipped: number } | null>
   onLiveEdit?: (texto: string) => void
@@ -380,6 +381,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onSyncKitPrice, onLiveEdit
   const [texto, setTexto] = useState(nodo?.texto ?? '')
   const [tipo, setTipo] = useState<TipoNodo>(nodo?.tipo ?? 'yo')
   const [fontSize, setFontSize] = useState<number>(nodo?.font_size ?? 13)
+  const [color, setColor] = useState<string>(nodo?.color ?? COLOR_MAP[nodo?.tipo ?? 'yo'])
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -390,6 +392,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onSyncKitPrice, onLiveEdit
     setTexto(nodo?.texto ?? '')
     setTipo(nodo?.tipo ?? 'yo')
     setFontSize(nodo?.font_size ?? 13)
+    setColor(nodo?.color ?? COLOR_MAP[nodo?.tipo ?? 'yo'])
     setConfirmDelete(false)
     setCopied(false)
     setSyncingPrice(false)
@@ -399,7 +402,7 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onSyncKitPrice, onLiveEdit
 
   const handleSave = async () => {
     setSaving(true)
-    await onSave(nodo.id, texto, tipo, fontSize)
+    await onSave(nodo.id, texto, tipo, fontSize, color)
     setSaving(false)
   }
 
@@ -478,6 +481,28 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onSyncKitPrice, onLiveEdit
               )
             })}
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs text-app-muted uppercase tracking-wider mb-2 font-semibold">Color del nodo</label>
+          <div className="grid grid-cols-7 gap-2">
+            {COLOR_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setColor(preset)}
+                className="h-8 rounded-lg border transition-all"
+                style={{ background: preset, borderColor: color === preset ? '#fff' : 'rgba(0,0,0,0.15)', boxShadow: color === preset ? '0 0 0 2px var(--brand)' : 'none' }}
+                title={preset}
+              />
+            ))}
+          </div>
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            className="mt-3 h-10 w-full rounded-xl border border-app-border bg-app-surface-2"
+          />
         </div>
 
         {/* Font size */}
@@ -881,26 +906,26 @@ export default function ModoEditor({
   }, [])
 
   const handleSaveNodo = useCallback(
-    async (id: string, texto: string, tipo: TipoNodo, fontSize: number) => {
+    async (id: string, texto: string, tipo: TipoNodo, fontSize: number, color: string) => {
       const nodeData = nodos.find((n) => n.id === id)
       const nodeWidth = nodeData?.ancho ?? 200
       const newHeight = measureNodeHeight(texto, nodeWidth, fontSize)
 
       // Save core fields (always present columns)
-      const { error } = await supabase.from('nodos').update({ texto, tipo, alto: newHeight }).eq('id', id)
+      const { error } = await supabase.from('nodos').update({ texto, tipo, alto: newHeight, color }).eq('id', id)
       if (!error) {
         // Best-effort: save font_size (requires DB migration if column doesn't exist yet)
         // ALTER TABLE nodos ADD COLUMN IF NOT EXISTS font_size integer DEFAULT 13;
         supabase.from('nodos').update({ font_size: fontSize }).eq('id', id).then(() => {})
 
         // Surgical update: only patch the changed node, preserving all others' positions
-        setNodos((prev) => prev.map((n) => n.id === id ? { ...n, texto, tipo, alto: newHeight, font_size: fontSize } : n))
+        setNodos((prev) => prev.map((n) => n.id === id ? { ...n, texto, tipo, alto: newHeight, font_size: fontSize, color } : n))
         setRfNodes((prev) => prev.map((n) =>
           n.id === id
-            ? { ...n, data: { ...n.data, label: texto, tipo, color: COLOR_MAP[tipo], fontSize }, style: { ...n.style, height: newHeight } }
+            ? { ...n, data: { ...n.data, label: texto, tipo, color, fontSize }, style: { ...n.style, height: newHeight } }
             : n
         ))
-        setSelectedNodo((sn) => sn?.id === id ? { ...sn, texto, tipo, alto: newHeight, font_size: fontSize } : sn)
+        setSelectedNodo((sn) => sn?.id === id ? { ...sn, texto, tipo, alto: newHeight, font_size: fontSize, color } : sn)
         onDataChange()
       }
     },
