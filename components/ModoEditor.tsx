@@ -1069,8 +1069,8 @@ export default function ModoEditor({
 
       const baseStartCloneId = targetStart.id
       for (const baseEdge of baseEdges) {
-        const originSource = sourceById.get(baseEdge.nodo_origen_id)
-        const originTarget = sourceById.get(baseEdge.nodo_destino_id)
+        const originSource = sourceById.get(baseEdge.source)
+        const originTarget = sourceById.get(baseEdge.target)
         if (!originSource || !originTarget) continue
         const sourceId = originSource.tipo === 'inicio' ? baseStartCloneId : newIdMap.get(originSource.id)
         const targetId = originTarget.tipo === 'inicio' ? baseStartCloneId : newIdMap.get(originTarget.id)
@@ -1081,14 +1081,14 @@ export default function ModoEditor({
           origin_target_id: originTarget.origin_id ?? originTarget.id,
           nodo_origen_id: sourceId,
           nodo_destino_id: targetId,
-          source_handle: baseEdge.source_handle,
-          target_handle: baseEdge.target_handle,
+          source_handle: baseEdge.sourceHandle ?? null,
+          target_handle: baseEdge.targetHandle ?? null,
         })
       }
     }
 
     onDataChange()
-  }, [allKits, conexiones, kit.id, nodos, onDataChange])
+  }, [allKits, kit.id, nodos, onDataChange, rfEdges])
 
   const handleDeleteNodo = useCallback(
     async (id: string) => {
