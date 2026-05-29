@@ -69,16 +69,6 @@ export default function Sidebar({
     setNewGroup('')
   }
 
-  const grouped = useMemo(() => {
-    const acc: Record<string, Kit[]> = {}
-    for (const kit of kits) {
-      const group = (kit.grupo ?? 'General').trim() || 'General'
-      if (!acc[group]) acc[group] = []
-      acc[group].push(kit)
-    }
-    return Object.entries(acc).sort(([a], [b]) => a.localeCompare(b, 'es'))
-  }, [kits])
-
   const renderKit = (kit: Kit) => (
     <div
       key={kit.id}
@@ -90,17 +80,17 @@ export default function Sidebar({
         setDraggedId(null)
       }}
       onClick={() => onSelectKit(kit.id)}
-      className={`group flex items-center justify-between px-3 py-2.5 cursor-pointer transition-all border ${
+      className={`group cursor-pointer transition-all border ${
         selectedKitId === kit.id
           ? 'bg-brand text-white border-transparent shadow-drop'
-          : 'text-app-text border-transparent hover:bg-app-surface-2 hover:border-app-border'
+          : 'bg-app-surface text-app-text border-app-border/60 hover:bg-app-surface-2 hover:border-app-border'
       }`}
-      style={{ borderRadius: 'var(--radius-btn)' }}
+      style={{ borderRadius: '16px' }}
     >
       {editingId === kit.id ? (
         <input
           autoFocus
-          className="bg-white text-black text-sm px-2 py-1 rounded w-full outline-none border border-app-border"
+          className="bg-white text-black text-sm px-3 py-2 rounded-xl w-full outline-none border border-app-border"
           value={editingName}
           onChange={(e) => setEditingName(e.target.value)}
           onBlur={() => handleRenameSubmit(kit.id)}
@@ -111,12 +101,23 @@ export default function Sidebar({
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <>
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedKitId === kit.id ? 'bg-white' : 'bg-app-muted'}`} />
-            <span className="text-sm font-medium truncate">{kit.nombre}</span>
+        <div className="p-3.5">
+          <div className="flex items-start gap-2">
+            <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${selectedKitId === kit.id ? 'bg-white' : 'bg-orange-500'}`} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] font-semibold leading-tight truncate">{kit.nombre}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full border border-white/20 bg-white/10 shrink-0">
+                  {kit.grupo ?? 'General'}
+                </span>
+              </div>
+              <div className={`mt-1 text-[11px] ${selectedKitId === kit.id ? 'text-white/80' : 'text-app-muted'}`}>
+                Arrastra para reordenar
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+
+          <div className="mt-3 flex items-center gap-1.5">
             <select
               value={kit.grupo ?? 'General'}
               onChange={(e) => {
@@ -124,7 +125,7 @@ export default function Sidebar({
                 onChangeKitGroup(kit.id, e.target.value)
               }}
               onClick={(e) => e.stopPropagation()}
-              className="text-[11px] px-2 py-1 rounded-md bg-white text-black border border-app-border mr-1"
+              className="flex-1 min-w-0 text-[11px] px-2 py-2 rounded-lg bg-white text-black border border-app-border"
             >
               {allGroups.map((group) => (
                 <option key={group} value={group}>{group}</option>
@@ -135,7 +136,7 @@ export default function Sidebar({
                 e.stopPropagation()
                 onDuplicateKit(kit.id)
               }}
-              className="p-1 rounded hover:bg-app-border text-app-muted hover:text-app-text transition-colors"
+              className="w-8 h-8 rounded-lg bg-black/5 text-app-muted hover:text-app-text hover:bg-black/10 transition-colors flex items-center justify-center"
               title="Duplicar kit"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,7 +146,7 @@ export default function Sidebar({
             </button>
             <button
               onClick={(e) => handleRenameStart(e, kit)}
-              className="p-1 rounded hover:bg-app-border text-app-muted hover:text-app-text transition-colors"
+              className="w-8 h-8 rounded-lg bg-black/5 text-app-muted hover:text-app-text hover:bg-black/10 transition-colors flex items-center justify-center"
               title="Renombrar"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -154,7 +155,7 @@ export default function Sidebar({
             </button>
             <button
               onClick={(e) => handleDeleteClick(e, kit.id)}
-              className="p-1 rounded hover:bg-red-500/10 text-app-muted hover:text-red-500 transition-colors"
+              className="w-8 h-8 rounded-lg bg-black/5 text-app-muted hover:text-red-500 hover:bg-red-500/10 transition-colors flex items-center justify-center"
               title="Eliminar"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -162,7 +163,7 @@ export default function Sidebar({
               </svg>
             </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   )
@@ -172,12 +173,12 @@ export default function Sidebar({
       <aside className="w-64 min-w-[256px] flex flex-col h-full border-r" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
         <div className="px-5 py-4 border-b border-app-border space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-title font-semibold text-app-text">Kits</h2>
+            <h2 className="font-title font-semibold text-app-text text-base">Kits</h2>
             <span className="text-xs text-app-muted">{kits.length}</span>
           </div>
           <button
             onClick={onToggleOrderByGroup}
-            className="w-full px-3 py-2 rounded-xl border text-xs font-semibold transition-colors bg-app-surface-2"
+            className="w-full px-4 py-3 rounded-2xl border text-sm font-semibold transition-colors bg-app-surface-2"
             style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
           >
             {orderByGroup ? 'Ver orden manual' : 'Ordenar por grupos'}
@@ -187,13 +188,13 @@ export default function Sidebar({
               value={newGroup}
               onChange={(e) => setNewGroup(e.target.value)}
               placeholder="Nuevo grupo"
-              className="flex-1 px-3 py-2 rounded-xl border bg-white text-black text-xs outline-none"
+              className="flex-1 px-4 py-3 rounded-2xl border bg-white text-black text-sm outline-none"
               style={{ borderColor: 'var(--border)' }}
             />
             <button
               type="button"
               onClick={handleCreateGroup}
-              className="px-3 py-2 rounded-xl border text-xs font-semibold bg-app-surface-2"
+              className="px-4 py-3 rounded-2xl border text-sm font-semibold bg-app-surface-2"
               style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
             >
               Crear
