@@ -8,6 +8,7 @@
 CREATE TABLE IF NOT EXISTS kits (
   id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   nombre     text        NOT NULL,
+  grupo      text        DEFAULT 'General',
   created_at timestamptz DEFAULT now()
 );
 
@@ -18,6 +19,7 @@ CREATE TABLE IF NOT EXISTS nodos (
   texto      text        NOT NULL DEFAULT '',
   posicion_x float       DEFAULT 0,
   posicion_y float       DEFAULT 0,
+  color      text        DEFAULT NULL,
   created_at timestamptz DEFAULT now()
 );
 

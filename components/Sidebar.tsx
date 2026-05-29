@@ -5,12 +5,15 @@ import { Kit } from '@/types'
 
 interface SidebarProps {
   kits: Kit[]
+  groupedKits: Record<string, Kit[]>
+  allGroups: string[]
   selectedKitId: string | null
   onSelectKit: (id: string) => void
   onAddKit: () => void
   onDuplicateKit: (id: string) => void
   onDeleteKit: (id: string) => void
   onRenameKit: (id: string, nombre: string) => void
+  onChangeKitGroup: (id: string, grupo: string) => void
   onMoveKit: (draggedId: string, targetId: string) => void
   orderByGroup: boolean
   onToggleOrderByGroup: () => void
@@ -18,12 +21,15 @@ interface SidebarProps {
 
 export default function Sidebar({
   kits,
+  groupedKits,
+  allGroups,
   selectedKitId,
   onSelectKit,
   onAddKit,
   onDuplicateKit,
   onDeleteKit,
   onRenameKit,
+  onChangeKitGroup,
   onMoveKit,
   orderByGroup,
   onToggleOrderByGroup,
@@ -32,6 +38,7 @@ export default function Sidebar({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [newGroup, setNewGroup] = useState('')
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
@@ -54,6 +61,12 @@ export default function Sidebar({
   const handleRenameSubmit = (id: string) => {
     if (editingName.trim()) onRenameKit(id, editingName.trim())
     setEditingId(null)
+  }
+
+  const handleCreateGroup = () => {
+    if (!newGroup.trim() || !selectedKitId) return
+    onChangeKitGroup(selectedKitId, newGroup.trim())
+    setNewGroup('')
   }
 
   const grouped = useMemo(() => {
@@ -104,6 +117,19 @@ export default function Sidebar({
             <span className="text-sm font-medium truncate">{kit.nombre}</span>
           </div>
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+            <select
+              value={kit.grupo ?? 'General'}
+              onChange={(e) => {
+                e.stopPropagation()
+                onChangeKitGroup(kit.id, e.target.value)
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-[11px] px-2 py-1 rounded-md bg-white text-black border border-app-border mr-1"
+            >
+              {allGroups.map((group) => (
+                <option key={group} value={group}>{group}</option>
+              ))}
+            </select>
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -156,12 +182,29 @@ export default function Sidebar({
           >
             {orderByGroup ? 'Ver orden manual' : 'Ordenar por grupos'}
           </button>
+          <div className="flex gap-2">
+            <input
+              value={newGroup}
+              onChange={(e) => setNewGroup(e.target.value)}
+              placeholder="Nuevo grupo"
+              className="flex-1 px-3 py-2 rounded-xl border bg-white text-black text-xs outline-none"
+              style={{ borderColor: 'var(--border)' }}
+            />
+            <button
+              type="button"
+              onClick={handleCreateGroup}
+              className="px-3 py-2 rounded-xl border text-xs font-semibold bg-app-surface-2"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+            >
+              Crear
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto py-2">
           <div className="space-y-1 px-2">
             {orderByGroup
-              ? grouped.map(([group, groupKits]) => (
+              ? Object.entries(groupedKits).sort(([a], [b]) => a.localeCompare(b, 'es')).map(([group, groupKits]) => (
                   <div key={group} className="space-y-1">
                     <div className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-app-muted">
                       {group}

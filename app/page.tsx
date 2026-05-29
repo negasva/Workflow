@@ -140,10 +140,12 @@ export default function Home() {
     const grupo = selectedKit?.grupo ?? 'General'
     const { data: kitData, error: kitError } = await supabase
       .from('kits')
-      .insert({ nombre, grupo })
+      .insert({ nombre })
       .select()
       .single()
     if (kitError || !kitData) return
+
+    await supabase.from('kits').update({ grupo }).eq('id', kitData.id)
 
     await supabase.from('nodos').insert({
       kit_id: kitData.id,
@@ -173,12 +175,15 @@ export default function Home() {
 
     const baseName = sourceKit.nombre.trim() || 'Kit'
     const nombre = `${baseName} (copia)`
+    const grupo = sourceKit.grupo ?? 'General'
     const { data: newKit, error: kitError } = await supabase
       .from('kits')
       .insert({ nombre })
       .select()
       .single()
     if (kitError || !newKit) return
+
+    await supabase.from('kits').update({ grupo }).eq('id', newKit.id)
 
     const idMap = new Map<string, string>()
     for (const nodo of sourceNodos) {
@@ -238,6 +243,14 @@ export default function Home() {
     []
   )
 
+  const handleChangeKitGroup = useCallback(async (id: string, grupo: string) => {
+    const nextGroup = grupo.trim() || 'General'
+    const { error } = await supabase.from('kits').update({ grupo: nextGroup }).eq('id', id)
+    if (!error) {
+      setKits((ks) => ks.map((k) => (k.id === id ? { ...k, grupo: nextGroup } : k)))
+    }
+  }, [])
+
   const handleMoveKit = useCallback((draggedId: string, targetId: string) => {
     setKits((current) => {
       const next = [...current]
@@ -253,6 +266,17 @@ export default function Home() {
   const handleToggleKitsOrder = useCallback(() => {
     setKitsOrderByGroup((v) => !v)
   }, [])
+
+  const allGroups = Array.from(new Set(kits.map((k) => (k.grupo ?? 'General').trim() || 'General')))
+    .sort((a, b) => a.localeCompare(b, 'es'))
+  if (!allGroups.includes('General')) allGroups.unshift('General')
+
+  const groupedKits = kits.reduce((acc, kit) => {
+    const grupo = (kit.grupo ?? 'General').trim() || 'General'
+    if (!acc[grupo]) acc[grupo] = []
+    acc[grupo].push(kit)
+    return acc
+  }, {} as Record<string, Kit[]>)
 
   const handleDataChange = useCallback(() => {
     if (selectedKitId) loadKitData(selectedKitId, true) // silent — no loading spinner
@@ -313,12 +337,15 @@ export default function Home() {
       {sidebarOpen && (
         <Sidebar
           kits={kits}
+          groupedKits={groupedKits}
+          allGroups={allGroups}
           selectedKitId={selectedKitId}
           onSelectKit={handleSelectKit}
           onAddKit={handleAddKit}
           onDuplicateKit={handleDuplicateKit}
           onDeleteKit={handleDeleteKit}
           onRenameKit={handleRenameKit}
+          onChangeKitGroup={handleChangeKitGroup}
           onMoveKit={handleMoveKit}
           orderByGroup={kitsOrderByGroup}
           onToggleOrderByGroup={handleToggleKitsOrder}
