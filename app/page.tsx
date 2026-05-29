@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, FormEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Kit, Nodo, Conexion } from '@/types'
 import Sidebar from '@/components/Sidebar'
@@ -16,6 +16,7 @@ import dynamicImport from 'next/dynamic'
 const ModoEditor = dynamicImport(() => import('@/components/ModoEditor'), { ssr: false })
 
 type Theme = 'light' | 'dark'
+const ACCESS_STORAGE_KEY = 'copyflow-access'
 
 export default function Home() {
   const [kits, setKits] = useState<Kit[]>([])
@@ -31,8 +32,13 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [accessGranted, setAccessGranted] = useState(false)
+  const [accessKeyInput, setAccessKeyInput] = useState('')
+  const [accessError, setAccessError] = useState(false)
 
   const selectedKit = kits.find((k) => k.id === selectedKitId)
+  const accessKey = process.env.NEXT_PUBLIC_APP_ACCESS_KEY?.trim() ?? ''
+  const lockEnabled = accessKey.length > 0
 
   // Theme: read from localStorage / system on mount, persist on change
   useEffect(() => {
@@ -44,6 +50,18 @@ export default function Home() {
     } catch { /* ignore */ }
   }, [])
 
+  useEffect(() => {
+    if (!lockEnabled) {
+      setAccessGranted(true)
+      return
+    }
+    try {
+      setAccessGranted(sessionStorage.getItem(ACCESS_STORAGE_KEY) === '1')
+    } catch {
+      setAccessGranted(false)
+    }
+  }, [lockEnabled])
+
   const handleToggleTheme = useCallback(() => {
     setTheme((t) => {
       const next: Theme = t === 'dark' ? 'light' : 'dark'
@@ -51,6 +69,28 @@ export default function Home() {
       try { localStorage.setItem('copyflow-theme', next) } catch { /* ignore */ }
       return next
     })
+  }, [])
+
+  const handleAccessSubmit = useCallback((e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!lockEnabled) return
+    if (accessKeyInput.trim() === accessKey) {
+      try {
+        sessionStorage.setItem(ACCESS_STORAGE_KEY, '1')
+      } catch { /* ignore */ }
+      setAccessGranted(true)
+      setAccessError(false)
+      setAccessKeyInput('')
+      return
+    }
+    setAccessError(true)
+  }, [accessKey, accessKeyInput, lockEnabled])
+
+  const handleLockExit = useCallback(() => {
+    try {
+      sessionStorage.removeItem(ACCESS_STORAGE_KEY)
+    } catch { /* ignore */ }
+    setAccessGranted(false)
   }, [])
 
   // Load all kits
@@ -96,9 +136,10 @@ export default function Home() {
 
   const handleAddKit = useCallback(async () => {
     const nombre = `Kit ${kits.length + 1}`
+    const grupo = selectedKit?.grupo ?? 'General'
     const { data: kitData, error: kitError } = await supabase
       .from('kits')
-      .insert({ nombre })
+      .insert({ nombre, grupo })
       .select()
       .single()
     if (kitError || !kitData) return
@@ -114,7 +155,7 @@ export default function Home() {
     await loadKits()
     setSelectedKitId(kitData.id)
     setSidebarOpen(true)
-  }, [kits.length, loadKits])
+  }, [kits.length, loadKits, selectedKit?.grupo])
 
   const handleDuplicateKit = useCallback(async (id: string) => {
     const sourceKit = kits.find((k) => k.id === id)

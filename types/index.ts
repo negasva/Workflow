@@ -3,6 +3,7 @@ export type TipoNodo = 'yo' | 'cliente' | 'inicio'
 export interface Kit {
   id: string
   nombre: string
+  grupo?: string | null
   created_at: string
 }
 
@@ -16,6 +17,7 @@ export interface Nodo {
   ancho?: number
   alto?: number
   font_size?: number
+  color?: string | null
   created_at: string
 }
 

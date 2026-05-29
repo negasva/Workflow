@@ -1073,35 +1073,7 @@ export default function ModoEditor({
           style={{ background: 'var(--bg-surface)' }}
         />
 
-        <Panel position="top-left">
-          <div className="flex items-start gap-2">
-            <div
-              className="backdrop-blur border rounded-xl px-4 py-2 text-xs space-y-1 shadow-card"
-              style={{ background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-            >
-              <p>• Doble clic en un nodo → editar texto en tiempo real</p>
-              <p>• Botón <span className="text-app-text font-semibold">+</span> (esquina sup.) → crea nodo hijo · botón copiar (esquina inf.)</p>
-              <p>• Arrastra desde cualquier handle → conexión manual</p>
-              <p>• Shift+clic o selección múltiple → herramientas de alineación</p>
-              <p>• Arrastra bordes seleccionados → redimensiona · Ctrl+Z deshace</p>
-            </div>
-            <button
-              onClick={toggleSnap}
-              title="Snap to grid 20px"
-              className="px-3 py-2 rounded-xl text-xs font-semibold border transition-all backdrop-blur shadow-soft"
-              style={
-                snapEnabled
-                  ? { background: '#F9731620', color: '#F97316', border: '1.5px solid #F9731680' }
-                  : { background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)', color: 'var(--text-muted)', border: '1.5px solid var(--border)' }
-              }
-            >
-              <span className="inline-flex items-center gap-1">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                Snap
-              </span>
-            </button>
-          </div>
-        </Panel>
+        
 
         {/* Alignment toolbar — visible when 2+ nodes are selected */}
         {selectedNodes.length >= 2 && (
