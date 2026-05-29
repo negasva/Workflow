@@ -481,6 +481,7 @@ export default function Home() {
           nodos={nodos}
           conexiones={conexiones}
           onDataChange={handleDataChange}
+          onKitDataChange={loadKitData}
         />
         )}
       </main>

@@ -34,6 +34,7 @@ interface ModoEditorProps {
   conexiones: Conexion[]
   onDataChange: () => void
   allKits: Kit[]
+  onKitDataChange: (kitId: string, silent?: boolean) => void
 }
 
 const COLOR_MAP: Record<TipoNodo, string> = {
@@ -369,16 +370,18 @@ function TextEditor({
 // ───────────────────────────────────────────────────────────
 interface NodePanelProps {
   nodo: Nodo | null
+  isBaseKit: boolean
   onClose: () => void
   onSave: (id: string, texto: string, tipo: TipoNodo, fontSize: number, color: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onSyncKitPrice: (price: string) => Promise<{ updated: number; skipped: number } | null>
+  onUpdateKits: () => Promise<void>
   onLiveEdit?: (texto: string) => void
   focusEditor?: boolean
   onEditorFocused?: () => void
 }
 
-function NodePanel({ nodo, onClose, onSave, onDelete, onSyncKitPrice, onLiveEdit, focusEditor, onEditorFocused }: NodePanelProps) {
+function NodePanel({ nodo, isBaseKit, onClose, onSave, onDelete, onSyncKitPrice, onUpdateKits, onLiveEdit, focusEditor, onEditorFocused }: NodePanelProps) {
   const [texto, setTexto] = useState(nodo?.texto ?? '')
   const [tipo, setTipo] = useState<TipoNodo>(nodo?.tipo ?? 'yo')
   const [fontSize, setFontSize] = useState<number>(nodo?.font_size ?? 13)
@@ -550,6 +553,20 @@ function NodePanel({ nodo, onClose, onSave, onDelete, onSyncKitPrice, onLiveEdit
       </div>
 
       <div className="p-5 border-t border-app-border space-y-2">
+        {nodo.tipo === 'inicio' && isBaseKit && (
+          <button
+            onClick={onUpdateKits}
+            className="w-full py-2.5 text-sm font-semibold transition-all bg-brand hover:bg-brand-hover text-white border border-transparent shadow-drop"
+            style={{ borderRadius: 'var(--radius-btn)' }}
+            title="Actualiza los kits derivados con la estructura del KIT BASE, sin modificar sus nodos de inicio"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4v6h6"/><path d="M20 20v-6h-6"/><path d="M20 8a8 8 0 0 0-14-4M4 16a8 8 0 0 0 14 4"/></svg>
+              Actualizar kits
+            </span>
+          </button>
+        )}
+
         {nodo.tipo === 'inicio' && (
           <button
             onClick={handleSyncPrice}
@@ -682,6 +699,7 @@ export default function ModoEditor({
   conexiones: initialConexiones,
   onDataChange,
   allKits,
+  onKitDataChange,
 }: ModoEditorProps) {
   const [rfNodes, setRfNodes] = useState<Node[]>(initialNodos.map(buildRFNode))
   const [rfEdges, setRfEdges] = useState<Edge[]>(initialConexiones.map(buildRFEdge))
@@ -1006,6 +1024,72 @@ export default function ModoEditor({
     [nodos, onDataChange]
   )
 
+  const handleUpdateKits = useCallback(async () => {
+    const baseStart = nodos.find((n) => n.tipo === 'inicio')
+    if (!baseStart) return
+
+    const baseNodes = nodos.filter((n) => n.id !== baseStart.id)
+    const baseEdges = rfEdges.filter((c) => c.source !== baseStart.id && c.target !== baseStart.id)
+    const kitsToUpdate = allKits.filter((k) => k.id !== kit.id)
+
+    const sourceById = new Map(baseNodes.map((n) => [n.id, n]))
+
+    for (const targetKit of kitsToUpdate) {
+      const [targetNodesRes] = await Promise.all([
+        supabase.from('nodos').select('*').eq('kit_id', targetKit.id),
+        supabase.from('conexiones').select('*').eq('kit_id', targetKit.id),
+      ])
+
+      const targetStart = (targetNodesRes.data ?? []).find((n) => n.tipo === 'inicio')
+      if (!targetStart) continue
+
+      const targetNonStartIds = (targetNodesRes.data ?? []).filter((n) => n.tipo !== 'inicio').map((n) => n.id)
+      if (targetNonStartIds.length > 0) {
+        await supabase.from('conexiones').delete().eq('kit_id', targetKit.id)
+        await supabase.from('nodos').delete().in('id', targetNonStartIds)
+      }
+
+      const newIdMap = new Map<string, string>()
+      for (const baseNode of baseNodes) {
+        const inserted = await supabase.from('nodos').insert({
+          kit_id: targetKit.id,
+          origin_id: baseNode.origin_id ?? baseNode.id,
+          tipo: baseNode.tipo,
+          texto: baseNode.texto,
+          posicion_x: baseNode.posicion_x,
+          posicion_y: baseNode.posicion_y,
+          ancho: baseNode.ancho,
+          alto: baseNode.alto,
+          font_size: baseNode.font_size,
+          color: baseNode.color ?? COLOR_MAP[baseNode.tipo],
+        }).select().single()
+        if (!inserted.data) continue
+        newIdMap.set(baseNode.id, inserted.data.id)
+      }
+
+      const baseStartCloneId = targetStart.id
+      for (const baseEdge of baseEdges) {
+        const originSource = sourceById.get(baseEdge.nodo_origen_id)
+        const originTarget = sourceById.get(baseEdge.nodo_destino_id)
+        if (!originSource || !originTarget) continue
+        const sourceId = originSource.tipo === 'inicio' ? baseStartCloneId : newIdMap.get(originSource.id)
+        const targetId = originTarget.tipo === 'inicio' ? baseStartCloneId : newIdMap.get(originTarget.id)
+        if (!sourceId || !targetId) continue
+        await supabase.from('conexiones').insert({
+          kit_id: targetKit.id,
+          origin_source_id: originSource.origin_id ?? originSource.id,
+          origin_target_id: originTarget.origin_id ?? originTarget.id,
+          nodo_origen_id: sourceId,
+          nodo_destino_id: targetId,
+          source_handle: baseEdge.source_handle,
+          target_handle: baseEdge.target_handle,
+        })
+      }
+    }
+
+    onDataChange()
+  }, [allKits, conexiones, kit.id, nodos, onDataChange])
+
   const handleDeleteNodo = useCallback(
     async (id: string) => {
       await supabase.from('nodos').delete().eq('id', id)
@@ -1227,10 +1311,12 @@ export default function ModoEditor({
 
       <NodePanel
         nodo={selectedNodo}
+        isBaseKit={isBaseKit}
         onClose={() => setSelectedNodo(null)}
         onSave={handleSaveNodo}
         onDelete={handleDeleteNodo}
         onSyncKitPrice={handleSyncKitPrice}
+        onUpdateKits={handleUpdateKits}
         onLiveEdit={handleLiveEdit}
         focusEditor={focusEditor}
         onEditorFocused={() => setFocusEditor(false)}
