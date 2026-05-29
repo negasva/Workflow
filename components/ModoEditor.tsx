@@ -298,6 +298,48 @@ function buildRFEdge(c: Conexion): Edge {
   }
 }
 
+type BaseGraphSnapshot = {
+  nodeIds: Set<string>
+  nodes: Nodo[]
+  edges: Array<{ source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }>
+}
+
+function collectBaseGraph(
+  nodos: Nodo[],
+  conexiones: Array<{ source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }>,
+  startId: string,
+): BaseGraphSnapshot {
+  const byId = new Map(nodos.map((n) => [n.id, n]))
+  const outgoing = new Map<string, Array<{ source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }>>()
+  for (const conn of conexiones) {
+    const list = outgoing.get(conn.source) ?? []
+    list.push(conn)
+    outgoing.set(conn.source, list)
+  }
+
+  const visited = new Set<string>([startId])
+  const queue = [startId]
+  const reachableEdges: Array<{ source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }> = []
+
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    const edges = outgoing.get(current) ?? []
+    for (const edge of edges) {
+      reachableEdges.push(edge)
+      if (!visited.has(edge.target)) {
+        visited.add(edge.target)
+        queue.push(edge.target)
+      }
+    }
+  }
+
+  return {
+    nodeIds: visited,
+    nodes: [...visited].map((id) => byId.get(id)).filter((n): n is Nodo => Boolean(n)),
+    edges: reachableEdges,
+  }
+}
+
 // ───────────────────────────────────────────────────────────
 // contentEditable text editor
 // ───────────────────────────────────────────────────────────
@@ -870,24 +912,6 @@ export default function ModoEditor({
         { ...connection, id: data.id, markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--rf-edge)' }, style: { strokeWidth: 2 } },
         eds
       ))
-      if (isBaseKit) {
-        const siblingKits = allKits.filter((k) => k.id !== kit.id)
-        await Promise.all(siblingKits.map(async (k) => {
-          const { data: siblingNodes } = await supabase.from('nodos').select('*').eq('kit_id', k.id)
-          const sSource = siblingNodes?.find((n) => (n.origin_id ?? n.id) === originSourceId)
-          const sTarget = siblingNodes?.find((n) => (n.origin_id ?? n.id) === originTargetId)
-          if (!sSource || !sTarget) return
-          await supabase.from('conexiones').insert({
-            kit_id: k.id,
-            nodo_origen_id: sSource.id,
-            nodo_destino_id: sTarget.id,
-            origin_source_id: originSourceId,
-            origin_target_id: originTargetId,
-            source_handle: connection.sourceHandle,
-            target_handle: connection.targetHandle,
-          })
-        }))
-      }
     }
   }, [allKits, isBaseKit, kit.id, nodos])
 
@@ -1028,25 +1052,30 @@ export default function ModoEditor({
     const baseStart = nodos.find((n) => n.tipo === 'inicio')
     if (!baseStart) return
 
-    const baseNodes = nodos.filter((n) => n.id !== baseStart.id)
-    const baseEdges = rfEdges.filter((c) => c.source !== baseStart.id && c.target !== baseStart.id)
+    const baseGraph = collectBaseGraph(nodos, rfEdges, baseStart.id)
+    const baseNodes = baseGraph.nodes.filter((n) => n.id !== baseStart.id)
+    const baseEdges = baseGraph.edges
     const kitsToUpdate = allKits.filter((k) => k.id !== kit.id)
 
     const sourceById = new Map(baseNodes.map((n) => [n.id, n]))
 
     for (const targetKit of kitsToUpdate) {
-      const [targetNodesRes] = await Promise.all([
+      const [targetNodesRes, targetConnsRes] = await Promise.all([
         supabase.from('nodos').select('*').eq('kit_id', targetKit.id),
         supabase.from('conexiones').select('*').eq('kit_id', targetKit.id),
       ])
 
-      const targetStart = (targetNodesRes.data ?? []).find((n) => n.tipo === 'inicio')
+      const targetNodes = targetNodesRes.data ?? []
+      const targetConns = targetConnsRes.data ?? []
+      const targetStart = targetNodes.find((n) => n.tipo === 'inicio')
       if (!targetStart) continue
 
-      const targetNonStartIds = (targetNodesRes.data ?? []).filter((n) => n.tipo !== 'inicio').map((n) => n.id)
-      if (targetNonStartIds.length > 0) {
+      const derivedNodeIds = targetNodes.filter((n) => n.tipo !== 'inicio').map((n) => n.id)
+      if (targetConns.length > 0) {
         await supabase.from('conexiones').delete().eq('kit_id', targetKit.id)
-        await supabase.from('nodos').delete().in('id', targetNonStartIds)
+      }
+      if (derivedNodeIds.length > 0) {
+        await supabase.from('nodos').delete().in('id', derivedNodeIds)
       }
 
       const newIdMap = new Map<string, string>()
@@ -1075,7 +1104,7 @@ export default function ModoEditor({
         const sourceId = originSource.tipo === 'inicio' ? baseStartCloneId : newIdMap.get(originSource.id)
         const targetId = originTarget.tipo === 'inicio' ? baseStartCloneId : newIdMap.get(originTarget.id)
         if (!sourceId || !targetId) continue
-        await supabase.from('conexiones').insert({
+        const payload = {
           kit_id: targetKit.id,
           origin_source_id: originSource.origin_id ?? originSource.id,
           origin_target_id: originTarget.origin_id ?? originTarget.id,
@@ -1083,7 +1112,8 @@ export default function ModoEditor({
           nodo_destino_id: targetId,
           source_handle: baseEdge.sourceHandle ?? null,
           target_handle: baseEdge.targetHandle ?? null,
-        })
+        }
+        await supabase.from('conexiones').insert(payload)
       }
     }
 
@@ -1116,23 +1146,6 @@ export default function ModoEditor({
       const nodeWithOrigin = { ...data, origin_id: originId }
       setNodos((prev) => [...prev, nodeWithOrigin])
       setRfNodes((prev) => [...prev, buildNodeWithCallbacks(nodeWithOrigin)])
-      if (isBaseKit) {
-        await Promise.all(allKits.filter((k) => k.id !== kit.id).map(async (k) => {
-          try {
-            await supabase.from('nodos').insert({
-              kit_id: k.id,
-              tipo: data.tipo,
-              texto: data.texto,
-              posicion_x: x,
-              posicion_y: y,
-              ancho: data.ancho ?? 200,
-              alto: data.alto ?? 80,
-              font_size: data.font_size ?? 13,
-              color: data.color ?? COLOR_MAP[data.tipo as TipoNodo],
-            })
-          } catch { /* ignore */ }
-        }))
-      }
       onDataChange()
     }
   }, [allKits, isBaseKit, kit.id, nodos, onDataChange, buildNodeWithCallbacks])
