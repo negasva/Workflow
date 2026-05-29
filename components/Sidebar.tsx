@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Kit } from '@/types'
 
 interface SidebarProps {
   kits: Kit[]
   groupedKits: Record<string, Kit[]>
   allGroups: string[]
+  orderedGroupNames: string[]
   selectedKitId: string | null
   onSelectKit: (id: string) => void
   onAddKit: () => void
@@ -15,14 +16,14 @@ interface SidebarProps {
   onRenameKit: (id: string, nombre: string) => void
   onChangeKitGroup: (id: string, grupo: string) => void
   onMoveKit: (draggedId: string, targetId: string) => void
-  orderByGroup: boolean
-  onToggleOrderByGroup: () => void
+  onMoveGroup: (draggedGroup: string, targetGroup: string) => void
 }
 
 export default function Sidebar({
   kits,
   groupedKits,
   allGroups,
+  orderedGroupNames,
   selectedKitId,
   onSelectKit,
   onAddKit,
@@ -31,13 +32,13 @@ export default function Sidebar({
   onRenameKit,
   onChangeKitGroup,
   onMoveKit,
-  orderByGroup,
-  onToggleOrderByGroup,
+  onMoveGroup,
 }: SidebarProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [draggedGroup, setDraggedGroup] = useState<string | null>(null)
   const [newGroup, setNewGroup] = useState('')
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
@@ -176,13 +177,6 @@ export default function Sidebar({
             <h2 className="font-title font-semibold text-app-text text-base">Kits</h2>
             <span className="text-xs text-app-muted">{kits.length}</span>
           </div>
-          <button
-            onClick={onToggleOrderByGroup}
-            className="w-full px-4 py-3 rounded-2xl border text-sm font-semibold transition-colors bg-app-surface-2"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-          >
-            {orderByGroup ? 'Ver orden manual' : 'Ordenar por grupos'}
-          </button>
           <div className="flex gap-2">
             <input
               value={newGroup}
@@ -203,17 +197,27 @@ export default function Sidebar({
         </div>
 
         <div className="flex-1 overflow-y-auto py-2">
-          <div className="space-y-1 px-2">
-            {orderByGroup
-              ? Object.entries(groupedKits).sort(([a], [b]) => a.localeCompare(b, 'es')).map(([group, groupKits]) => (
-                  <div key={group} className="space-y-1">
-                    <div className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-app-muted">
-                      {group}
-                    </div>
-                    {groupKits.map(renderKit)}
-                  </div>
-                ))
-              : kits.map(renderKit)}
+          <div className="space-y-2 px-2">
+            {orderedGroupNames.map((group) => (
+              <div
+                key={group}
+                className="space-y-1"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (draggedGroup && draggedGroup !== group) onMoveGroup(draggedGroup, group)
+                  setDraggedGroup(null)
+                }}
+              >
+                <div
+                  draggable
+                  onDragStart={() => setDraggedGroup(group)}
+                  className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-app-muted cursor-grab select-none"
+                >
+                  {group}
+                </div>
+                {groupedKits[group]?.map(renderKit)}
+              </div>
+            ))}
             {kits.length === 0 && <div className="px-3 py-8 text-center text-xs text-app-muted">Sin kits todavía</div>}
           </div>
         </div>
@@ -221,7 +225,7 @@ export default function Sidebar({
         <div className="p-3 border-t border-app-border">
           <button
             onClick={onAddKit}
-            className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-white py-2.5 text-sm font-semibold transition-all shadow-drop hover:shadow-node"
+            className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-white py-3.5 text-sm font-semibold transition-all shadow-drop hover:shadow-node"
             style={{ borderRadius: 'var(--radius-btn)' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

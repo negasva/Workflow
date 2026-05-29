@@ -17,6 +17,8 @@ const ModoEditor = dynamicImport(() => import('@/components/ModoEditor'), { ssr:
 
 type Theme = 'light' | 'dark'
 const ACCESS_STORAGE_KEY = 'copyflow-access'
+const GROUPS_STORAGE_KEY = 'copyflow-kit-groups'
+const GROUP_ORDER_STORAGE_KEY = 'copyflow-group-order'
 
 export default function Home() {
   const [kits, setKits] = useState<Kit[]>([])
@@ -33,9 +35,10 @@ export default function Home() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [accessGranted, setAccessGranted] = useState(false)
-  const [kitsOrderByGroup, setKitsOrderByGroup] = useState(false)
   const [accessKeyInput, setAccessKeyInput] = useState('')
   const [accessError, setAccessError] = useState(false)
+  const [kitGroups, setKitGroups] = useState<Record<string, string>>({})
+  const [groupsOrder, setGroupsOrder] = useState<string[]>([])
 
   const selectedKit = kits.find((k) => k.id === selectedKitId)
   const accessKey = process.env.NEXT_PUBLIC_APP_ACCESS_KEY?.trim() ?? ''
@@ -62,6 +65,42 @@ export default function Home() {
       setAccessGranted(false)
     }
   }, [lockEnabled])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(GROUPS_STORAGE_KEY)
+      if (stored) setKitGroups(JSON.parse(stored))
+    } catch {
+      setKitGroups({})
+    }
+  }, [])
+
+  useEffect(() => {
+    const ordered = Object.values(kitGroups)
+    if (ordered.length > 0) {
+      const unique = Array.from(new Set(ordered))
+      if (!groupsOrder.length) setGroupsOrder(unique)
+    }
+  }, [kitGroups, groupsOrder.length])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(GROUP_ORDER_STORAGE_KEY)
+      if (stored) setGroupsOrder(JSON.parse(stored))
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(GROUPS_STORAGE_KEY, JSON.stringify(kitGroups))
+    } catch { /* ignore */ }
+  }, [kitGroups])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(GROUP_ORDER_STORAGE_KEY, JSON.stringify(groupsOrder))
+    } catch { /* ignore */ }
+  }, [groupsOrder])
 
   const handleToggleTheme = useCallback(() => {
     setTheme((t) => {
@@ -101,13 +140,13 @@ export default function Home() {
       .select('*')
       .order('created_at', { ascending: true })
     if (data) {
-      setKits(data)
+      setKits(data.map((kit) => ({ ...kit, grupo: kitGroups[kit.id] ?? kit.grupo ?? 'General' })))
       if (!selectedKitIdRef.current && data.length > 0) {
         setSelectedKitId(data[0].id)
       }
     }
     setLoading(false)
-  }, [])
+  }, [kitGroups])
   const selectedKitIdRef = useRef(selectedKitId)
   useEffect(() => { selectedKitIdRef.current = selectedKitId }, [selectedKitId])
 
@@ -137,7 +176,6 @@ export default function Home() {
 
   const handleAddKit = useCallback(async () => {
     const nombre = `Kit ${kits.length + 1}`
-    const grupo = selectedKit?.grupo ?? 'General'
     const { data: kitData, error: kitError } = await supabase
       .from('kits')
       .insert({ nombre })
@@ -145,7 +183,7 @@ export default function Home() {
       .single()
     if (kitError || !kitData) return
 
-    await supabase.from('kits').update({ grupo }).eq('id', kitData.id)
+    setKitGroups((prev) => ({ ...prev, [kitData.id]: selectedKit?.grupo ?? 'General' }))
 
     await supabase.from('nodos').insert({
       kit_id: kitData.id,
@@ -175,7 +213,6 @@ export default function Home() {
 
     const baseName = sourceKit.nombre.trim() || 'Kit'
     const nombre = `${baseName} (copia)`
-    const grupo = sourceKit.grupo ?? 'General'
     const { data: newKit, error: kitError } = await supabase
       .from('kits')
       .insert({ nombre })
@@ -183,7 +220,7 @@ export default function Home() {
       .single()
     if (kitError || !newKit) return
 
-    await supabase.from('kits').update({ grupo }).eq('id', newKit.id)
+    setKitGroups((prev) => ({ ...prev, [newKit.id]: sourceKit.grupo ?? 'General' }))
 
     const idMap = new Map<string, string>()
     for (const nodo of sourceNodos) {
@@ -243,12 +280,10 @@ export default function Home() {
     []
   )
 
-  const handleChangeKitGroup = useCallback(async (id: string, grupo: string) => {
+  const handleChangeKitGroup = useCallback((id: string, grupo: string) => {
     const nextGroup = grupo.trim() || 'General'
-    const { error } = await supabase.from('kits').update({ grupo: nextGroup }).eq('id', id)
-    if (!error) {
-      setKits((ks) => ks.map((k) => (k.id === id ? { ...k, grupo: nextGroup } : k)))
-    }
+    setKitGroups((prev) => ({ ...prev, [id]: nextGroup }))
+    setKits((ks) => ks.map((k) => (k.id === id ? { ...k, grupo: nextGroup } : k)))
   }, [])
 
   const handleMoveKit = useCallback((draggedId: string, targetId: string) => {
@@ -263,20 +298,29 @@ export default function Home() {
     })
   }, [])
 
-  const handleToggleKitsOrder = useCallback(() => {
-    setKitsOrderByGroup((v) => !v)
+  const handleMoveGroup = useCallback((draggedGroup: string, targetGroup: string) => {
+    setGroupsOrder((current) => {
+      const next = [...current]
+      const from = next.indexOf(draggedGroup)
+      const to = next.indexOf(targetGroup)
+      if (from < 0 || to < 0 || from === to) return current
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
   }, [])
 
-  const allGroups = Array.from(new Set(kits.map((k) => (k.grupo ?? 'General').trim() || 'General')))
+  const allGroups = Array.from(new Set(Object.values(kitGroups).concat(kits.map((k) => (k.grupo ?? 'General').trim() || 'General'))))
     .sort((a, b) => a.localeCompare(b, 'es'))
   if (!allGroups.includes('General')) allGroups.unshift('General')
 
   const groupedKits = kits.reduce((acc, kit) => {
-    const grupo = (kit.grupo ?? 'General').trim() || 'General'
+    const grupo = (kit.grupo ?? kitGroups[kit.id] ?? 'General').trim() || 'General'
     if (!acc[grupo]) acc[grupo] = []
-    acc[grupo].push(kit)
+    acc[grupo].push({ ...kit, grupo })
     return acc
   }, {} as Record<string, Kit[]>)
+  const orderedGroupNames = groupsOrder.length ? groupsOrder.filter((g) => groupedKits[g]).concat(Object.keys(groupedKits).filter((g) => !groupsOrder.includes(g))) : Object.keys(groupedKits).sort((a, b) => a.localeCompare(b, 'es'))
 
   const handleDataChange = useCallback(() => {
     if (selectedKitId) loadKitData(selectedKitId, true) // silent — no loading spinner
@@ -339,6 +383,7 @@ export default function Home() {
           kits={kits}
           groupedKits={groupedKits}
           allGroups={allGroups}
+          orderedGroupNames={orderedGroupNames}
           selectedKitId={selectedKitId}
           onSelectKit={handleSelectKit}
           onAddKit={handleAddKit}
@@ -347,8 +392,7 @@ export default function Home() {
           onRenameKit={handleRenameKit}
           onChangeKitGroup={handleChangeKitGroup}
           onMoveKit={handleMoveKit}
-          orderByGroup={kitsOrderByGroup}
-          onToggleOrderByGroup={handleToggleKitsOrder}
+          onMoveGroup={handleMoveGroup}
         />
       )}
 
