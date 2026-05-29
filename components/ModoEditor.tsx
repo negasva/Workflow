@@ -33,6 +33,7 @@ interface ModoEditorProps {
   nodos: Nodo[]
   conexiones: Conexion[]
   onDataChange: () => void
+  allKits: Kit[]
 }
 
 const COLOR_MAP: Record<TipoNodo, string> = {
@@ -680,6 +681,7 @@ export default function ModoEditor({
   nodos: initialNodos,
   conexiones: initialConexiones,
   onDataChange,
+  allKits,
 }: ModoEditorProps) {
   const [rfNodes, setRfNodes] = useState<Node[]>(initialNodos.map(buildRFNode))
   const [rfEdges, setRfEdges] = useState<Edge[]>(initialConexiones.map(buildRFEdge))
@@ -688,6 +690,7 @@ export default function ModoEditor({
   const [selectedNodes, setSelectedNodes] = useState<Node[]>([])
   const [focusEditor, setFocusEditor] = useState(false)
   const [edgeMenu, setEdgeMenu] = useState<EdgeMenu | null>(null)
+  const isBaseKit = /base/i.test(kit.nombre)
 
   // Stable ref to currently selected nodo — used by live-edit without closure staleness
   const selectedNodoRef = useRef(selectedNodo)
@@ -832,12 +835,16 @@ export default function ModoEditor({
   const onConnect = useCallback(async (connection: Connection) => {
     if (!connection.source || !connection.target) return
     const base = { kit_id: kit.id, nodo_origen_id: connection.source, nodo_destino_id: connection.target }
+    const sourceNode = nodos.find((n) => n.id === connection.source)
+    const targetNode = nodos.find((n) => n.id === connection.target)
+    const originSourceId = sourceNode?.origin_id ?? sourceNode?.id ?? null
+    const originTargetId = targetNode?.origin_id ?? targetNode?.id ?? null
     let { data, error } = await supabase
       .from('conexiones')
-      .insert({ ...base, source_handle: connection.sourceHandle, target_handle: connection.targetHandle })
+      .insert({ ...base, origin_source_id: originSourceId, origin_target_id: originTargetId, source_handle: connection.sourceHandle, target_handle: connection.targetHandle })
       .select().single()
     if (error) {
-      const retry = await supabase.from('conexiones').insert(base).select().single()
+      const retry = await supabase.from('conexiones').insert({ ...base, origin_source_id: originSourceId, origin_target_id: originTargetId }).select().single()
       data = retry.data; error = retry.error
     }
     if (!error && data) {
@@ -845,8 +852,26 @@ export default function ModoEditor({
         { ...connection, id: data.id, markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--rf-edge)' }, style: { strokeWidth: 2 } },
         eds
       ))
+      if (isBaseKit) {
+        const siblingKits = allKits.filter((k) => k.id !== kit.id)
+        await Promise.all(siblingKits.map(async (k) => {
+          const { data: siblingNodes } = await supabase.from('nodos').select('*').eq('kit_id', k.id)
+          const sSource = siblingNodes?.find((n) => (n.origin_id ?? n.id) === originSourceId)
+          const sTarget = siblingNodes?.find((n) => (n.origin_id ?? n.id) === originTargetId)
+          if (!sSource || !sTarget) return
+          await supabase.from('conexiones').insert({
+            kit_id: k.id,
+            nodo_origen_id: sSource.id,
+            nodo_destino_id: sTarget.id,
+            origin_source_id: originSourceId,
+            origin_target_id: originTargetId,
+            source_handle: connection.sourceHandle,
+            target_handle: connection.targetHandle,
+          })
+        }))
+      }
     }
-  }, [kit.id])
+  }, [allKits, isBaseKit, kit.id, nodos])
 
   const onEdgeClick = useCallback((e: React.MouseEvent, edge: Edge) => {
     e.stopPropagation()
@@ -1000,14 +1025,33 @@ export default function ModoEditor({
     const { x, y } = findEmptyPosition(nodos)
     const { data, error } = await supabase
       .from('nodos')
-      .insert({ kit_id: kit.id, tipo: 'yo', texto: 'Nuevo mensaje — edítame', posicion_x: x, posicion_y: y, ancho: 200, alto: 80 })
+      .insert({ kit_id: kit.id, tipo: 'yo', texto: 'Nuevo mensaje ? ed?tame', posicion_x: x, posicion_y: y, ancho: 200, alto: 80 })
       .select().single()
     if (!error && data) {
-      setNodos((prev) => [...prev, data])
-      setRfNodes((prev) => [...prev, buildNodeWithCallbacks(data)])
+      const originId = data.id
+      await supabase.from('nodos').update({ origin_id: originId }).eq('id', data.id)
+      const nodeWithOrigin = { ...data, origin_id: originId }
+      setNodos((prev) => [...prev, nodeWithOrigin])
+      setRfNodes((prev) => [...prev, buildNodeWithCallbacks(nodeWithOrigin)])
+      if (isBaseKit) {
+        await Promise.all(allKits.filter((k) => k.id !== kit.id).map(async (k) => {
+          await supabase.from('nodos').insert({
+            kit_id: k.id,
+            origin_id: originId,
+            tipo: data.tipo,
+            texto: data.texto,
+            posicion_x: x,
+            posicion_y: y,
+            ancho: data.ancho ?? 200,
+            alto: data.alto ?? 80,
+            font_size: data.font_size ?? 13,
+            color: data.color ?? COLOR_MAP[data.tipo as TipoNodo],
+          })
+        }))
+      }
       onDataChange()
     }
-  }, [kit.id, nodos, onDataChange, buildNodeWithCallbacks])
+  }, [allKits, isBaseKit, kit.id, nodos, onDataChange, buildNodeWithCallbacks])
 
   // ── Alignment ──────────────────────────────────────────────
   const alignSelected = useCallback(async (type: 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom') => {

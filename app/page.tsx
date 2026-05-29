@@ -474,13 +474,14 @@ export default function Home() {
         ) : mode === 'venta' ? (
           <ModoVenta nodos={nodos} conexiones={conexiones} />
         ) : (
-          <ModoEditor
-            key={selectedKitId!}
-            kit={selectedKit}
-            nodos={nodos}
-            conexiones={conexiones}
-            onDataChange={handleDataChange}
-          />
+        <ModoEditor
+          key={selectedKitId!}
+          kit={selectedKit}
+          allKits={kits}
+          nodos={nodos}
+          conexiones={conexiones}
+          onDataChange={handleDataChange}
+        />
         )}
       </main>
 

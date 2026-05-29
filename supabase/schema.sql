@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS kits (
 CREATE TABLE IF NOT EXISTS nodos (
   id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   kit_id     uuid        REFERENCES kits(id) ON DELETE CASCADE,
+  origin_id  uuid,
   tipo       text        CHECK (tipo IN ('yo', 'cliente', 'inicio')),
   texto      text        NOT NULL DEFAULT '',
   posicion_x float       DEFAULT 0,
@@ -26,6 +27,8 @@ CREATE TABLE IF NOT EXISTS nodos (
 CREATE TABLE IF NOT EXISTS conexiones (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   kit_id           uuid REFERENCES kits(id) ON DELETE CASCADE,
+  origin_source_id uuid,
+  origin_target_id uuid,
   nodo_origen_id   uuid REFERENCES nodos(id) ON DELETE CASCADE,
   nodo_destino_id  uuid REFERENCES nodos(id) ON DELETE CASCADE
 );

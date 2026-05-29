@@ -10,6 +10,7 @@ export interface Kit {
 export interface Nodo {
   id: string
   kit_id: string
+  origin_id?: string | null
   tipo: TipoNodo
   texto: string
   posicion_x: number
@@ -24,6 +25,8 @@ export interface Nodo {
 export interface Conexion {
   id: string
   kit_id: string
+  origin_source_id?: string | null
+  origin_target_id?: string | null
   nodo_origen_id: string
   nodo_destino_id: string
   source_handle?: string | null
