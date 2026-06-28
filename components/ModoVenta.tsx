@@ -14,15 +14,6 @@ const TIPO_COLOR: Record<TipoNodo, string> = {
   cliente: '#B83A10', // Fishwife warm red
 }
 
-function darken15(hex: string): string {
-  const m = hex.replace('#', '')
-  const r = parseInt(m.slice(0, 2), 16)
-  const g = parseInt(m.slice(2, 4), 16)
-  const b = parseInt(m.slice(4, 6), 16)
-  const d = (v: number) => Math.max(0, Math.round(v * 0.85))
-  return `rgb(${d(r)}, ${d(g)}, ${d(b)})`
-}
-
 function TipoBadge({ tipo, color }: { tipo: TipoNodo; color: string }) {
   return (
     <span
@@ -120,11 +111,11 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg-app)' }}>
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-app-border" style={{ background: 'var(--bg-surface)' }}>
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2 border-b border-app-border" style={{ background: 'var(--bg-surface)' }}>
         <button
           onClick={handleBack}
           disabled={history.length === 0}
-          className="flex items-center gap-1.5 text-sm text-app-muted hover:text-app-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1.5 text-sm text-app-muted hover:text-app-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-2 py-2 -ml-2"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -134,7 +125,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
         <span className="text-app-border">|</span>
         <button
           onClick={handleReset}
-          className="text-sm text-app-muted hover:text-app-text transition-colors flex items-center gap-1.5"
+          className="text-sm text-app-muted hover:text-app-text transition-colors flex items-center gap-1.5 px-2 py-2"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
           Inicio
@@ -146,38 +137,37 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-3 sm:space-y-4">
           {/* Current node card */}
           <div
-            className="p-5"
+            className="p-4 sm:p-5"
             style={{
               background: borderColor,
               borderRadius: 'var(--radius-card)',
-              boxShadow: `0 8px 20px -4px ${darken15(borderColor)}, 0 3px 8px -2px ${darken15(borderColor)}`,
+              border: '1px solid rgba(255,255,255,0.10)',
               color: '#ffffff',
             }}
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between gap-2 mb-3">
               <TipoBadge tipo={currentNode.tipo} color="rgba(255,255,255,0.9)" />
               {(currentNode.tipo === 'yo' || currentNode.tipo === 'inicio') && (
                 <button
                   onClick={() => handleCopy(currentNode.texto, currentNode.id)}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 transition-all"
+                  className="flex items-center gap-1.5 text-sm font-semibold px-4 min-h-[40px] transition-colors shrink-0 active:scale-95"
                   style={{
-                    background: copied === currentNode.id ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255,255,255,0.4)',
+                    background: copied === currentNode.id ? 'rgba(255,255,255,0.25)' : '#ffffff',
+                    color: copied === currentNode.id ? '#ffffff' : borderColor,
                     borderRadius: 'var(--radius-btn)',
                   }}
                 >
                   {copied === currentNode.id ? (
                     <>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                       Copiado
                     </>
                   ) : (
                     <>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                       Copiar
                     </>
                   )}
@@ -185,7 +175,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
               )}
             </div>
 
-            <p className="text-white text-base leading-relaxed wapp-text whitespace-pre-wrap">
+            <p className="text-white text-[15px] sm:text-base leading-relaxed wapp-text whitespace-pre-wrap">
               {renderWappText(currentNode.texto)}
             </p>
           </div>
@@ -205,43 +195,36 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                     tabIndex={0}
                     onClick={() => handleNavigate(node.id)}
                     onKeyDown={(e) => e.key === 'Enter' && handleNavigate(node.id)}
-                    className="w-full text-left p-4 transition-all group cursor-pointer"
+                    className="w-full text-left p-4 transition-colors cursor-pointer active:brightness-110"
                     style={{
                       background: nc,
                       borderRadius: 'var(--radius-card)',
-                      boxShadow: `0 6px 16px -4px ${darken15(nc)}, 0 2px 6px -2px ${darken15(nc)}`,
+                      border: '1px solid rgba(255,255,255,0.10)',
                       color: '#ffffff',
                     }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.filter = 'brightness(1.1)'
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.filter = ''
-                    }}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between gap-2 mb-2">
                       <TipoBadge tipo={node.tipo} color="rgba(255,255,255,0.9)" />
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           handleCopy(node.texto, node.id)
                         }}
-                        className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 opacity-0 group-hover:opacity-100 transition-all"
+                        className="flex items-center gap-1.5 text-sm font-semibold px-4 min-h-[40px] transition-colors shrink-0 active:scale-95"
                         style={{
-                          background: 'rgba(255,255,255,0.2)',
-                          color: '#ffffff',
-                          border: '1px solid rgba(255,255,255,0.4)',
+                          background: copied === node.id ? 'rgba(255,255,255,0.25)' : '#ffffff',
+                          color: copied === node.id ? '#ffffff' : nc,
                           borderRadius: 'var(--radius-btn)',
                         }}
                       >
                         {copied === node.id ? (
                           <>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                             Copiado
                           </>
                         ) : (
                           <>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                             Copiar
                           </>
                         )}
@@ -253,7 +236,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                         {renderWappText(node.texto)}
                       </span>
                       <svg
-                        className="w-4 h-4 text-white/60 group-hover:text-white shrink-0 mt-0.5 transition-colors"
+                        className="w-5 h-5 text-white/70 shrink-0 mt-0.5"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"

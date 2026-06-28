@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -6,12 +6,20 @@ export const metadata: Metadata = {
   description: 'Gestiona tus flujos de ventas por WhatsApp',
 }
 
-// Avoid flash by setting the theme class before React hydrates
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0E1116',
+}
+
+// Avoid flash by setting the theme class before React hydrates.
+// Dark is the default; light is opt-in via the `light` class.
 const themeInitScript = `
 (function(){try{
   var t=localStorage.getItem('copyflow-theme');
-  if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
-  if(t==='dark'){document.documentElement.classList.add('dark');}
+  if(t==='light'){document.documentElement.classList.add('light');}
 }catch(e){}})();
 `
 
