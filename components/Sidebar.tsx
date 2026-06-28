@@ -9,6 +9,7 @@ interface SidebarProps {
   allGroups: string[]
   orderedGroupNames: string[]
   selectedKitId: string | null
+  onClose: () => void
   onSelectKit: (id: string) => void
   onAddKit: () => void
   onDuplicateKit: (id: string) => void
@@ -25,6 +26,7 @@ export default function Sidebar({
   allGroups,
   orderedGroupNames,
   selectedKitId,
+  onClose,
   onSelectKit,
   onAddKit,
   onDuplicateKit,
@@ -108,12 +110,9 @@ export default function Sidebar({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-[15px] font-semibold leading-tight truncate">{kit.nombre}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full border border-white/20 bg-white/10 shrink-0">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${selectedKitId === kit.id ? 'border-white/25 bg-white/10' : 'border-app-border bg-app-surface-2 text-app-muted'}`}>
                   {kit.grupo ?? 'General'}
                 </span>
-              </div>
-              <div className={`mt-1 text-[11px] ${selectedKitId === kit.id ? 'text-white/80' : 'text-app-muted'}`}>
-                Arrastra para reordenar
               </div>
             </div>
           </div>
@@ -126,7 +125,7 @@ export default function Sidebar({
                 onChangeKitGroup(kit.id, e.target.value)
               }}
               onClick={(e) => e.stopPropagation()}
-              className="flex-1 min-w-0 text-[11px] px-2 py-2 rounded-lg bg-white text-black border border-app-border"
+              className={`flex-1 min-w-0 text-[11px] px-2 py-2 rounded-lg border ${selectedKitId === kit.id ? 'bg-white/15 text-white border-white/25' : 'bg-app-surface-2 text-app-text border-app-border'}`}
             >
               {allGroups.map((group) => (
                 <option key={group} value={group}>{group}</option>
@@ -137,7 +136,7 @@ export default function Sidebar({
                 e.stopPropagation()
                 onDuplicateKit(kit.id)
               }}
-              className="w-8 h-8 rounded-lg bg-black/5 text-app-muted hover:text-app-text hover:bg-black/10 transition-colors flex items-center justify-center"
+              className={`w-9 h-9 rounded-lg transition-colors flex items-center justify-center shrink-0 ${selectedKitId === kit.id ? 'bg-white/15 text-white hover:bg-white/25' : 'bg-app-surface-2 text-app-muted hover:text-app-text hover:bg-app-border'}`}
               title="Duplicar kit"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -147,7 +146,7 @@ export default function Sidebar({
             </button>
             <button
               onClick={(e) => handleRenameStart(e, kit)}
-              className="w-8 h-8 rounded-lg bg-black/5 text-app-muted hover:text-app-text hover:bg-black/10 transition-colors flex items-center justify-center"
+              className={`w-9 h-9 rounded-lg transition-colors flex items-center justify-center shrink-0 ${selectedKitId === kit.id ? 'bg-white/15 text-white hover:bg-white/25' : 'bg-app-surface-2 text-app-muted hover:text-app-text hover:bg-app-border'}`}
               title="Renombrar"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,7 +155,7 @@ export default function Sidebar({
             </button>
             <button
               onClick={(e) => handleDeleteClick(e, kit.id)}
-              className="w-8 h-8 rounded-lg bg-black/5 text-app-muted hover:text-red-500 hover:bg-red-500/10 transition-colors flex items-center justify-center"
+              className={`w-9 h-9 rounded-lg transition-colors flex items-center justify-center shrink-0 ${selectedKitId === kit.id ? 'bg-white/15 text-white hover:bg-red-500/40' : 'bg-app-surface-2 text-app-muted hover:text-red-400 hover:bg-red-500/15'}`}
               title="Eliminar"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -171,25 +170,43 @@ export default function Sidebar({
 
   return (
     <>
-      <aside className="w-64 min-w-[256px] flex flex-col h-full border-r" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-        <div className="px-5 py-4 border-b border-app-border space-y-3">
+      {/* Drawer backdrop — mobile only */}
+      <div
+        className="fixed inset-0 z-30 bg-black/60 md:hidden"
+        onClick={onClose}
+        aria-hidden
+      />
+      <aside
+        className="fixed md:static z-40 top-0 bottom-0 left-16 md:left-auto w-[78vw] max-w-[300px] md:w-64 md:min-w-[256px] md:max-w-none flex flex-col h-full border-r"
+        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+      >
+        <div className="px-4 md:px-5 py-3.5 md:py-4 border-b border-app-border space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-title font-semibold text-app-text text-base">Kits</h2>
-            <span className="text-xs text-app-muted">{kits.length}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-app-muted">{kits.length}</span>
+              <button
+                onClick={onClose}
+                className="md:hidden text-app-muted hover:text-app-text p-1 -mr-1"
+                title="Cerrar"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>
           <div className="flex gap-2">
             <input
               value={newGroup}
               onChange={(e) => setNewGroup(e.target.value)}
               placeholder="Nuevo grupo"
-              className="flex-1 px-4 py-3 rounded-2xl border bg-white text-black text-sm outline-none"
+              className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border bg-app-surface-2 text-app-text placeholder:text-app-muted text-sm outline-none focus:border-brand"
               style={{ borderColor: 'var(--border)' }}
             />
             <button
               type="button"
               onClick={handleCreateGroup}
-              className="px-4 py-3 rounded-2xl border text-sm font-semibold bg-app-surface-2"
-              style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+              className="px-3.5 py-2.5 rounded-xl border text-sm font-semibold bg-app-surface-2 hover:bg-app-border transition-colors shrink-0"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
             >
               Crear
             </button>

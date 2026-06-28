@@ -29,8 +29,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [kitLoading, setKitLoading] = useState(false)
 
-  const [theme, setTheme] = useState<Theme>('light')
+  const [theme, setTheme] = useState<Theme>('dark')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
@@ -44,14 +45,27 @@ export default function Home() {
   const accessKey = process.env.NEXT_PUBLIC_APP_ACCESS_KEY?.trim() ?? ''
   const lockEnabled = accessKey.length > 0
 
-  // Theme: read from localStorage / system on mount, persist on change
+  // Theme: dark by default, light is opt-in. Persist on change.
   useEffect(() => {
     try {
       const stored = localStorage.getItem('copyflow-theme') as Theme | null
-      const initial: Theme = stored ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      const initial: Theme = stored ?? 'dark'
       setTheme(initial)
-      document.documentElement.classList.toggle('dark', initial === 'dark')
+      document.documentElement.classList.toggle('light', initial === 'light')
     } catch { /* ignore */ }
+  }, [])
+
+  // Track viewport: sidebar is an overlay drawer on mobile, closed by default.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const apply = () => {
+      setIsMobile(mq.matches)
+      if (mq.matches) setSidebarOpen(false)
+      else setSidebarOpen(true)
+    }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
   }, [])
 
   useEffect(() => {
@@ -105,7 +119,7 @@ export default function Home() {
   const handleToggleTheme = useCallback(() => {
     setTheme((t) => {
       const next: Theme = t === 'dark' ? 'light' : 'dark'
-      document.documentElement.classList.toggle('dark', next === 'dark')
+      document.documentElement.classList.toggle('light', next === 'light')
       try { localStorage.setItem('copyflow-theme', next) } catch { /* ignore */ }
       return next
     })
@@ -171,8 +185,9 @@ export default function Home() {
 
   const handleSelectKit = useCallback((id: string) => {
     setSelectedKitId(id)
-    setSidebarOpen(true)
-  }, [])
+    // On mobile, close the drawer so the kit content is visible immediately.
+    setSidebarOpen(!isMobile)
+  }, [isMobile])
 
   const handleAddKit = useCallback(async () => {
     const nombre = `Kit ${kits.length + 1}`
@@ -352,7 +367,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
+      <div className="app-shell flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
         <div className="text-center space-y-3">
           <svg className="animate-pulse mx-auto" width="48" height="48" viewBox="0 0 24 24" fill="none">
             <path d="M8 4V16C8 17.1046 8.89543 18 10 18L18 18C19.1046 18 20 17.1046 20 16V7.24162C20 6.7034 19.7831 6.18789 19.3982 5.81161L16.0829 2.56999C15.7092 2.2046 15.2074 2 14.6847 2H10C8.89543 2 8 2.89543 8 4Z" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -365,7 +380,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ background: 'var(--bg-app)' }}>
+    <div className="app-shell flex overflow-hidden" style={{ background: 'var(--bg-app)' }}>
       <IconNav
         mode={mode}
         theme={theme}
@@ -385,6 +400,7 @@ export default function Home() {
           allGroups={allGroups}
           orderedGroupNames={orderedGroupNames}
           selectedKitId={selectedKitId}
+          onClose={() => setSidebarOpen(false)}
           onSelectKit={handleSelectKit}
           onAddKit={handleAddKit}
           onDuplicateKit={handleDuplicateKit}
@@ -399,21 +415,21 @@ export default function Home() {
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {/* Kit header */}
         <div
-          className="px-6 py-3 border-b flex items-center gap-3 min-h-[56px]"
+          className="px-3 md:px-6 py-2.5 md:py-3 border-b flex items-center gap-2 md:gap-3 min-h-[52px]"
           style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
         >
           {selectedKit ? (
             <>
               <button
                 onClick={() => setSidebarOpen((s) => !s)}
-                className="text-app-muted hover:text-app-text transition-colors p-1 -ml-1"
+                className="text-app-muted hover:text-app-text transition-colors p-2 -ml-2 shrink-0"
                 title={sidebarOpen ? 'Ocultar kits' : 'Mostrar kits'}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               </button>
-              <h1 className="font-title text-app-text font-semibold text-sm">{selectedKit.nombre}</h1>
+              <h1 className="font-title text-app-text font-semibold text-sm truncate">{selectedKit.nombre}</h1>
               <span
-                className="text-xs px-2.5 py-0.5 rounded-full border font-medium"
+                className="hidden sm:inline text-xs px-2.5 py-0.5 rounded-full border font-medium shrink-0"
                 style={{
                   background: mode === 'venta' ? '#04785715' : '#1D4ED815',
                   color: mode === 'venta' ? '#047857' : '#1D4ED8',
@@ -422,7 +438,7 @@ export default function Home() {
               >
                 {mode === 'venta' ? 'Modo Venta' : 'Modo Editor'}
               </span>
-              <div className="ml-auto flex items-center bg-app-surface-2 border border-app-border p-0.5 text-xs font-medium" style={{ borderRadius: 'var(--radius-btn)' }}>
+              <div className="ml-auto flex items-center bg-app-surface-2 border border-app-border p-0.5 text-xs font-medium shrink-0" style={{ borderRadius: 'var(--radius-btn)' }}>
                 <button
                   onClick={() => setMode('venta')}
                   className={`px-3 py-1 transition-all ${

@@ -16,14 +16,24 @@ const config: Config = {
       },
       colors: {
         brand: {
-          DEFAULT: '#D4481A',
-          hover: '#B83A12',
-          soft: '#FAE8E0',
+          DEFAULT: 'var(--brand)',
+          hover: 'var(--brand-hover)',
+          soft: 'var(--brand-soft)',
+        },
+        // Maps the app-* utility classes used across the UI to CSS vars.
+        // Previously undefined → silently produced no styles.
+        app: {
+          bg: 'var(--bg-app)',
+          surface: 'var(--bg-surface)',
+          'surface-2': 'var(--bg-surface-2)',
+          border: 'var(--border)',
+          text: 'var(--text-primary)',
+          muted: 'var(--text-muted)',
         },
         nodo: {
-          inicio: '#1B3A8C',
-          yo: '#0D6B5A',
-          cliente: '#B83A10',
+          inicio: 'var(--nodo-inicio)',
+          yo: 'var(--nodo-yo)',
+          cliente: 'var(--nodo-cliente)',
         },
       },
       borderRadius: {

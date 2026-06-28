@@ -62,57 +62,65 @@
 }
 
 /* ─── Theme variables ───────────────────────────────────── */
-:root {
-  /* Fishwife-inspired warm cream palette */
-  --bg-app: #F5EDDA;
-  --bg-surface: #FFFCF4;
-  --bg-surface-2: #F0E6CE;
-  --bg-elevated: #FFFCF4;
-  --bg-nav: #0F2B45;
-  --border: #DDD0B3;
-  --border-strong: #C8B898;
-  --text-primary: #1A2744;
-  --text-secondary: #4A5568;
-  --text-muted: #8B7D65;
-  --text-on-nav: #C8D8E8;
-  --brand: #D4481A;
-  --brand-hover: #B83A12;
-  --brand-soft: #FAE8E0;
-  --dot-pattern: #C8B898;
-  --rf-edge: #8B7D65;
-  --rf-handle-bg: #FFFCF4;
-  --rf-handle-border: #8B7D65;
-  --shadow-card: 0 2px 8px -1px rgb(26 39 68 / 0.08), 0 1px 3px 0 rgb(26 39 68 / 0.05);
-  --shadow-drop: 0 6px 20px -4px rgb(26 39 68 / 0.16), 0 2px 6px -1px rgb(26 39 68 / 0.10);
-  --shadow-node: 0 8px 24px -4px rgb(26 39 68 / 0.22), 0 3px 8px -2px rgb(26 39 68 / 0.12);
-  --radius-node: 18px;
-  --radius-card: 16px;
-  --radius-btn: 12px;
+/* Flat palette. Dark is the default; .light opts into light mode. */
+:root, .dark {
+  /* Flat dark — neutral slate, high contrast (WCAG AA) */
+  --bg-app: #0E1116;
+  --bg-surface: #161A21;
+  --bg-surface-2: #1E232C;
+  --bg-elevated: #1E232C;
+  --bg-nav: #0A0D12;
+  --border: #272D38;
+  --border-strong: #39414F;
+  --text-primary: #E7EAF0;
+  --text-secondary: #AEB6C2;
+  --text-muted: #828C9B;
+  --text-on-nav: #AEB6C2;
+  --brand: #E2562A;
+  --brand-hover: #F2683C;
+  --brand-soft: #2A1710;
+  --nodo-inicio: #3A63C0;
+  --nodo-yo: #2C7D69;
+  --nodo-cliente: #C2562A;
+  --dot-pattern: #272D38;
+  --rf-edge: #475160;
+  --rf-handle-bg: #161A21;
+  --rf-handle-border: #475160;
+  /* Flat: minimal, single-layer shadows */
+  --shadow-card: 0 1px 0 0 rgb(0 0 0 / 0.30);
+  --shadow-drop: 0 2px 8px -2px rgb(0 0 0 / 0.45);
+  --shadow-node: 0 4px 14px -4px rgb(0 0 0 / 0.55);
+  --radius-node: 14px;
+  --radius-card: 14px;
+  --radius-btn: 10px;
 }
 
-.dark {
-  /* Fishwife dark — warm deep navy/teal tones */
-  --bg-app: #0D1E2E;
-  --bg-surface: #142233;
-  --bg-surface-2: #1A2B3E;
-  --bg-elevated: #172840;
-  --bg-nav: #080F18;
-  --border: #253548;
-  --border-strong: #334A60;
-  --text-primary: #F0E8D8;
-  --text-secondary: #B8C8D4;
-  --text-muted: #6B7E8E;
-  --text-on-nav: #8AAEC4;
-  --brand: #E05A28;
-  --brand-hover: #F46A35;
-  --brand-soft: #3D1A0A;
-  --dot-pattern: #253548;
-  --rf-edge: #4A6478;
-  --rf-handle-bg: #142233;
-  --rf-handle-border: #4A6478;
-  --shadow-card: 0 2px 8px -1px rgb(0 0 0 / 0.35), 0 1px 3px 0 rgb(0 0 0 / 0.25);
-  --shadow-drop: 0 6px 20px -4px rgb(0 0 0 / 0.55), 0 2px 6px -1px rgb(0 0 0 / 0.35);
-  --shadow-node: 0 8px 24px -4px rgb(0 0 0 / 0.65), 0 3px 8px -2px rgb(0 0 0 / 0.45);
+.light {
+  /* Flat light — neutral, clean */
+  --bg-app: #F4F5F7;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #ECEEF1;
+  --bg-elevated: #FFFFFF;
+  --bg-nav: #161A21;
+  --border: #E1E4E9;
+  --border-strong: #CDD2DA;
+  --text-primary: #161A21;
+  --text-secondary: #3F4754;
+  --text-muted: #6B7482;
+  --text-on-nav: #AEB6C2;
+  --brand: #D4481A;
+  --brand-hover: #B83A12;
+  --brand-soft: #FBEAE2;
+  --nodo-inicio: #3A63C0;
+  --nodo-yo: #2C7D69;
+  --nodo-cliente: #C2562A;
+  --dot-pattern: #D7DBE1;
+  --rf-edge: #9AA3AF;
+  --rf-handle-bg: #FFFFFF;
+  --rf-handle-border: #9AA3AF;
+  --shadow-card: 0 1px 0 0 rgb(0 0 0 / 0.05);
+  --shadow-drop: 0 2px 8px -2px rgb(0 0 0 / 0.12);
+  --shadow-node: 0 4px 14px -4px rgb(0 0 0 / 0.18);
 }
 
 /* ─── Base ──────────────────────────────────────────────── */
@@ -140,6 +148,29 @@ h1, h2, h3, h4, .font-title {
 
 #__next, main {
   height: 100vh;
+}
+
+/* Use dynamic viewport height on mobile so browser chrome doesn't clip UI */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Visible focus for keyboard nav (WCAG) */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────── */
@@ -213,11 +244,11 @@ h1, h2, h3, h4, .font-title {
 .shadow-node { box-shadow: var(--shadow-node); }
 
 .modal-backdrop {
-  background: rgb(26 39 68 / 0.45);
+  background: rgb(0 0 0 / 0.65);
   backdrop-filter: blur(4px);
 }
-.dark .modal-backdrop {
-  background: rgb(0 0 0 / 0.65);
+.light .modal-backdrop {
+  background: rgb(20 24 33 / 0.40);
 }
 
 .wapp-text {
