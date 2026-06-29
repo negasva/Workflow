@@ -6,8 +6,9 @@ import { Nodo, TipoNodo } from '@/types'
 interface SearchModalProps {
   open: boolean
   nodos: Nodo[]
+  kitNames?: Record<string, string>
   onClose: () => void
-  onSelect: (id: string) => void
+  onSelect: (id: string, kitId?: string) => void
 }
 
 const TIPO_COLOR: Record<TipoNodo, string> = {
@@ -16,7 +17,7 @@ const TIPO_COLOR: Record<TipoNodo, string> = {
   cliente: '#B83A10',
 }
 
-export default function SearchModal({ open, nodos, onClose, onSelect }: SearchModalProps) {
+export default function SearchModal({ open, nodos, kitNames, onClose, onSelect }: SearchModalProps) {
   const [q, setQ] = useState('')
   const [idx, setIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -48,7 +49,7 @@ export default function SearchModal({ open, nodos, onClose, onSelect }: SearchMo
         setIdx((i) => Math.max(i - 1, 0))
       }
       if (e.key === 'Enter' && results[idx]) {
-        onSelect(results[idx].id)
+        onSelect(results[idx].id, results[idx].kit_id)
         onClose()
       }
     }
@@ -71,7 +72,7 @@ export default function SearchModal({ open, nodos, onClose, onSelect }: SearchMo
             ref={inputRef}
             value={q}
             onChange={(e) => { setQ(e.target.value); setIdx(0) }}
-            placeholder="Buscar nodo por texto..."
+            placeholder="Buscar en todos los kits..."
             className="flex-1 bg-transparent outline-none text-app-text placeholder:text-app-muted text-sm"
           />
           <kbd className="text-[10px] px-1.5 py-0.5 rounded border border-app-border text-app-muted">ESC</kbd>
@@ -86,7 +87,7 @@ export default function SearchModal({ open, nodos, onClose, onSelect }: SearchMo
                 <button
                   key={n.id}
                   onMouseEnter={() => setIdx(i)}
-                  onClick={() => { onSelect(n.id); onClose() }}
+                  onClick={() => { onSelect(n.id, n.kit_id); onClose() }}
                   className={`w-full text-left px-4 py-2.5 flex items-start gap-3 transition-colors border-l-2 ${
                     i === idx ? 'bg-app-surface-2 border-l-brand' : 'border-l-transparent'
                   }`}
@@ -97,7 +98,12 @@ export default function SearchModal({ open, nodos, onClose, onSelect }: SearchMo
                   >
                     {n.tipo}
                   </span>
-                  <span className="text-sm text-app-text line-clamp-2 flex-1">{n.texto || <em className="text-app-muted">(vacío)</em>}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm text-app-text line-clamp-2">{n.texto || <em className="text-app-muted">(vacío)</em>}</span>
+                    {kitNames?.[n.kit_id] && (
+                      <span className="block text-[11px] text-app-muted mt-0.5 truncate">{kitNames[n.kit_id]}</span>
+                    )}
+                  </span>
                 </button>
               )
             })

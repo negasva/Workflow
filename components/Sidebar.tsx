@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Kit } from '@/types'
 
 interface SidebarProps {
@@ -48,6 +48,22 @@ export default function Sidebar({
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [draggedGroup, setDraggedGroup] = useState<string | null>(null)
   const [newGroup, setNewGroup] = useState('')
+  const [collapsed, setCollapsed] = useState<string[]>([])
+
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem('copyflow-collapsed-groups')
+      if (s) setCollapsed(JSON.parse(s))
+    } catch { /* ignore */ }
+  }, [])
+
+  const toggleCollapse = (g: string) => {
+    setCollapsed((prev) => {
+      const next = prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
+      try { localStorage.setItem('copyflow-collapsed-groups', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
@@ -208,7 +224,10 @@ export default function Sidebar({
         className="fixed md:static z-40 top-0 bottom-0 left-16 md:left-auto w-[78vw] max-w-[300px] md:w-64 md:min-w-[256px] md:max-w-none flex flex-col h-full border-r"
         style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
       >
-        <div className="px-4 md:px-5 py-3.5 md:py-4 border-b border-app-border space-y-3">
+        <div
+          className="px-4 md:px-5 py-3.5 md:py-4 border-b border-app-border space-y-3"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.875rem)' }}
+        >
           <div className="flex items-center justify-between">
             <h2 className="font-title font-semibold text-app-text text-base">Kits</h2>
             <div className="flex items-center gap-3">
@@ -277,18 +296,28 @@ export default function Sidebar({
                 <div
                   draggable
                   onDragStart={() => setDraggedGroup(group)}
-                  className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-app-muted cursor-grab select-none"
+                  className="flex items-center gap-1.5 px-2 pt-2 pb-1 cursor-grab select-none"
                 >
-                  {group}
+                  <button
+                    onClick={() => toggleCollapse(group)}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-app-muted hover:text-app-text transition-colors"
+                  >
+                    <svg
+                      className={`w-3 h-3 transition-transform ${collapsed.includes(group) ? '-rotate-90' : ''}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    ><polyline points="6 9 12 15 18 9" /></svg>
+                    {group}
+                  </button>
+                  <span className="ml-auto text-[10px] text-app-muted">{groupedKits[group]?.length ?? 0}</span>
                 </div>
-                {groupedKits[group]?.map(renderKit)}
+                {!collapsed.includes(group) && groupedKits[group]?.map(renderKit)}
               </div>
             ))}
             {kits.length === 0 && <div className="px-3 py-8 text-center text-xs text-app-muted">Sin kits todavía</div>}
           </div>
         </div>
 
-        <div className="p-3 border-t border-app-border">
+        <div className="p-3 border-t border-app-border" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}>
           <button
             onClick={onAddKit}
             className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-white py-3.5 text-sm font-semibold transition-all shadow-drop hover:shadow-node"

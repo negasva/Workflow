@@ -6,6 +6,8 @@ import { Nodo, Conexion, TipoNodo } from '@/types'
 interface ModoVentaProps {
   nodos: Nodo[]
   conexiones: Conexion[]
+  jumpNode?: string | null
+  jumpNonce?: number
 }
 
 const TIPO_COLOR: Record<TipoNodo, string> = {
@@ -16,6 +18,8 @@ const TIPO_COLOR: Record<TipoNodo, string> = {
 
 const VARS_STORAGE_KEY = 'copyflow-variables'
 const USAGE_STORAGE_KEY = 'copyflow-usage'
+const USAGE_META_STORAGE_KEY = 'copyflow-usage-meta'
+const FONTSCALE_STORAGE_KEY = 'copyflow-venta-fontscale'
 
 // Detect {variable} tokens across the kit's text.
 function extractVars(nodos: Nodo[]): string[] {
@@ -94,15 +98,16 @@ function renderText(text: string, values: Record<string, string>) {
   })
 }
 
-export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
+export default function ModoVenta({ nodos, conexiones, jumpNode, jumpNonce }: ModoVentaProps) {
   const rootNode = nodos.find((n) => n.tipo === 'inicio') ?? nodos[0] ?? null
-  const [currentId, setCurrentId] = useState<string | null>(rootNode?.id ?? null)
+  const [currentId, setCurrentId] = useState<string | null>(jumpNode ?? rootNode?.id ?? null)
   const [history, setHistory] = useState<string[]>([])
   const [copied, setCopied] = useState<string | null>(null)
 
   const [varValues, setVarValues] = useState<Record<string, string>>({})
   const [varsOpen, setVarsOpen] = useState(false)
   const [usage, setUsage] = useState<Record<string, number>>({})
+  const [fontScale, setFontScale] = useState(1)
 
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQ, setSearchQ] = useState('')
@@ -110,15 +115,34 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
 
   const varNames = useMemo(() => extractVars(nodos), [nodos])
 
-  // Load persisted variable values + usage counts.
+  // Load persisted variable values + usage counts + text size.
   useEffect(() => {
     try {
       const v = localStorage.getItem(VARS_STORAGE_KEY)
       if (v) setVarValues(JSON.parse(v))
       const u = localStorage.getItem(USAGE_STORAGE_KEY)
       if (u) setUsage(JSON.parse(u))
+      const f = localStorage.getItem(FONTSCALE_STORAGE_KEY)
+      if (f) setFontScale(Math.min(1.5, Math.max(0.85, parseFloat(f) || 1)))
     } catch { /* ignore */ }
   }, [])
+
+  const changeFontScale = useCallback((delta: number) => {
+    setFontScale((s) => {
+      const next = Math.min(1.5, Math.max(0.85, Math.round((s + delta) * 100) / 100))
+      try { localStorage.setItem(FONTSCALE_STORAGE_KEY, String(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+
+  // Jump to a node coming from global search (resets the step path).
+  useEffect(() => {
+    if (jumpNode) {
+      setHistory([])
+      setCurrentId(jumpNode)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpNonce])
 
   const setVar = useCallback((name: string, value: string) => {
     setVarValues((prev) => {
@@ -170,9 +194,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
     setSearchQ('')
   }, [])
 
-  const handleCopy = useCallback(async (rawText: string, id: string) => {
-    const text = fillVars(rawText, varValues)
-    bumpUsage(id)
+  const writeClipboard = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
     } catch {
@@ -183,9 +205,36 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
       document.execCommand('copy')
       document.body.removeChild(el)
     }
+  }, [])
+
+  const handleCopy = useCallback(async (rawText: string, id: string) => {
+    const text = fillVars(rawText, varValues)
+    bumpUsage(id)
+    // Keep a text snapshot per node for the usage stats view.
+    try {
+      const metaRaw = localStorage.getItem(USAGE_META_STORAGE_KEY)
+      const meta = metaRaw ? JSON.parse(metaRaw) : {}
+      const node = nodos.find((n) => n.id === id)
+      meta[id] = { text: node?.texto ?? rawText, tipo: node?.tipo ?? 'yo' }
+      localStorage.setItem(USAGE_META_STORAGE_KEY, JSON.stringify(meta))
+    } catch { /* ignore */ }
+    await writeClipboard(text)
     setCopied(id)
     setTimeout(() => setCopied(null), 2000)
-  }, [varValues, bumpUsage])
+  }, [varValues, bumpUsage, nodos, writeClipboard])
+
+  // Copy the full pitch: every "yo"/"inicio" message along the current path.
+  const handleCopyConversation = useCallback(async () => {
+    const path = [...history, currentId].filter(Boolean) as string[]
+    const msgs = path
+      .map((id) => nodos.find((n) => n.id === id))
+      .filter((n): n is Nodo => !!n && (n.tipo === 'yo' || n.tipo === 'inicio'))
+      .map((n) => fillVars(n.texto, varValues))
+    if (msgs.length === 0) return
+    await writeClipboard(msgs.join('\n\n'))
+    setCopied('__all__')
+    setTimeout(() => setCopied(null), 2000)
+  }, [history, currentId, nodos, varValues, writeClipboard])
 
   useEffect(() => {
     if (searchOpen) setTimeout(() => searchRef.current?.focus(), 50)
@@ -276,6 +325,28 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
         </button>
 
         <div className="ml-auto flex items-center gap-1">
+          {/* Text size A- / A+ */}
+          <div className="flex items-center rounded-lg border border-app-border overflow-hidden">
+            <button
+              onClick={() => changeFontScale(-0.1)}
+              disabled={fontScale <= 0.85}
+              className="px-2 py-1.5 text-app-muted hover:text-app-text hover:bg-app-surface-2 disabled:opacity-30 transition-colors text-xs font-bold"
+              title="Texto más chico"
+            >A−</button>
+            <button
+              onClick={() => changeFontScale(0.1)}
+              disabled={fontScale >= 1.5}
+              className="px-2 py-1.5 text-app-muted hover:text-app-text hover:bg-app-surface-2 disabled:opacity-30 transition-colors text-sm font-bold border-l border-app-border"
+              title="Texto más grande"
+            >A+</button>
+          </div>
+          <button
+            onClick={handleCopyConversation}
+            className={`p-2 rounded-lg transition-colors ${copied === '__all__' ? 'bg-brand text-white' : 'text-app-muted hover:text-app-text hover:bg-app-surface-2'}`}
+            title="Copiar toda la conversación (mis mensajes del recorrido)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>
+          </button>
           <button
             onClick={() => setSearchOpen((s) => !s)}
             className={`p-2 rounded-lg transition-colors ${searchOpen ? 'bg-brand text-white' : 'text-app-muted hover:text-app-text hover:bg-app-surface-2'}`}
@@ -283,7 +354,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </button>
-          <span className="text-xs text-app-muted font-mono pl-1">Paso {history.length + 1}</span>
+          <span className="hidden sm:inline text-xs text-app-muted font-mono pl-1">Paso {history.length + 1}</span>
         </div>
       </div>
 
@@ -331,7 +402,10 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-3 sm:space-y-4">
+        <div
+          className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-3 sm:space-y-4"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)' }}
+        >
           {/* Variables panel (collapsed by default) */}
           {varNames.length > 0 && (
             <div className="rounded-xl border border-app-border overflow-hidden" style={{ background: 'var(--bg-surface)' }}>
@@ -405,7 +479,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
               )}
             </div>
 
-            <p className="text-white text-[15px] sm:text-base leading-relaxed wapp-text whitespace-pre-wrap">
+            <p className="text-white leading-relaxed wapp-text whitespace-pre-wrap" style={{ fontSize: `${Math.round(16 * fontScale)}px` }}>
               {renderText(currentNode.texto, varValues)}
             </p>
           </div>
@@ -474,7 +548,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <span className="text-white text-sm leading-relaxed wapp-text whitespace-pre-wrap flex-1">
+                      <span className="text-white leading-relaxed wapp-text whitespace-pre-wrap flex-1" style={{ fontSize: `${Math.round(14 * fontScale)}px` }}>
                         {renderText(node.texto, varValues)}
                       </span>
                       <svg
@@ -503,10 +577,10 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
 
       {/* Copy confirmation toast */}
       <div
-        className={`pointer-events-none fixed left-1/2 -translate-x-1/2 bottom-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-white shadow-lg transition-all duration-200 ${
+        className={`pointer-events-none fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-white shadow-lg transition-all duration-200 ${
           copied ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
         }`}
-        style={{ background: '#0D6B5A' }}
+        style={{ background: '#0D6B5A', bottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)' }}
         role="status"
         aria-live="polite"
       >
