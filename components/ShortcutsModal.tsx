@@ -8,6 +8,11 @@ interface ShortcutsModalProps {
 }
 
 const SHORTCUTS: { keys: string[]; label: string }[] = [
+  { keys: ['C'], label: 'Copiar mensaje actual (Venta)' },
+  { keys: ['1', '–', '9'], label: 'Elegir respuesta (Venta)' },
+  { keys: ['Backspace'], label: 'Atras (Venta)' },
+  { keys: ['R'], label: 'Volver al inicio (Venta)' },
+  { keys: ['/'], label: 'Buscar mensaje y saltar (Venta)' },
   { keys: ['Ctrl', 'K'], label: 'Buscar nodo' },
   { keys: ['Ctrl', 'Z'], label: 'Deshacer ultimo movimiento' },
   { keys: ['?'], label: 'Abrir atajos' },
@@ -17,7 +22,6 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['Drag handle'], label: 'Crear conexion manual' },
   { keys: ['Click edge'], label: 'Menu: invertir / eliminar' },
   { keys: ['Boton'], label: 'Duplicar kit desde la lista' },
-  { keys: ['Inicio'], label: 'Aplicar precio del kit desde el nodo inicio' },
 ]
 
 export default function ShortcutsModal({ open, onClose }: ShortcutsModalProps) {

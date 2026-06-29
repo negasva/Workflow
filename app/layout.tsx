@@ -4,6 +4,17 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'CopyFlow',
   description: 'Gestiona tus flujos de ventas por WhatsApp',
+  applicationName: 'CopyFlow',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'CopyFlow',
+    statusBarStyle: 'black-translucent',
+  },
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export const viewport: Viewport = {
