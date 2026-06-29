@@ -197,6 +197,42 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
     return nodos.filter((n) => n.texto.toLowerCase().includes(q)).slice(0, 20)
   }, [searchQ, nodos])
 
+  // Keyboard shortcuts (desktop power use). Ignored while typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      const typing = t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.isContentEditable
+      if (typing) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const cur = nodos.find((n) => n.id === currentId)
+
+      if (e.key === '/') {
+        e.preventDefault()
+        setSearchOpen(true)
+        return
+      }
+      if (e.key === 'Backspace') {
+        e.preventDefault()
+        if (history.length > 0) handleBack()
+        return
+      }
+      if (e.key === 'r' || e.key === 'R') {
+        handleReset()
+        return
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        if (cur && (cur.tipo === 'yo' || cur.tipo === 'inicio')) handleCopy(cur.texto, cur.id)
+        return
+      }
+      if (/^[1-9]$/.test(e.key)) {
+        const target = nextNodes[parseInt(e.key, 10) - 1]
+        if (target) handleNavigate(target.id)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [nodos, currentId, history.length, nextNodes, handleBack, handleReset, handleCopy, handleNavigate])
+
   if (!currentNode) {
     return (
       <div className="flex-1 flex items-center justify-center text-app-muted">
@@ -380,7 +416,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
               <p className="text-xs text-app-muted uppercase tracking-wider font-semibold px-1">
                 Respuestas posibles
               </p>
-              {nextNodes.map((node) => {
+              {nextNodes.map((node, i) => {
                 const nc = TIPO_COLOR[node.tipo] ?? '#94a3b8'
                 return (
                   <div
@@ -399,6 +435,15 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                   >
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2 min-w-0">
+                        {i < 9 && (
+                          <span
+                            className="hidden sm:flex items-center justify-center w-5 h-5 rounded text-[11px] font-bold shrink-0"
+                            style={{ background: 'rgba(255,255,255,0.22)', color: '#fff' }}
+                            title={`Atajo: tecla ${i + 1}`}
+                          >
+                            {i + 1}
+                          </span>
+                        )}
                         <TipoBadge tipo={node.tipo} color="rgba(255,255,255,0.9)" />
                         <UsageBadge count={usage[node.id] ?? 0} />
                       </div>
@@ -454,6 +499,19 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Copy confirmation toast */}
+      <div
+        className={`pointer-events-none fixed left-1/2 -translate-x-1/2 bottom-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-white shadow-lg transition-all duration-200 ${
+          copied ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+        }`}
+        style={{ background: '#0D6B5A' }}
+        role="status"
+        aria-live="polite"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Copiado al portapapeles
       </div>
     </div>
   )

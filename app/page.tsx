@@ -21,6 +21,7 @@ const GROUPS_STORAGE_KEY = 'copyflow-kit-groups'
 const GROUP_ORDER_STORAGE_KEY = 'copyflow-group-order'
 const FAVORITES_STORAGE_KEY = 'copyflow-favorites'
 const RECENT_STORAGE_KEY = 'copyflow-recent'
+const LAST_KIT_STORAGE_KEY = 'copyflow-last-kit'
 const RECENT_LIMIT = 4
 
 export default function Home() {
@@ -187,7 +188,11 @@ export default function Home() {
     if (data) {
       setKits(data.map((kit) => ({ ...kit, grupo: kitGroups[kit.id] ?? kit.grupo ?? 'General' })))
       if (!selectedKitIdRef.current && data.length > 0) {
-        setSelectedKitId(data[0].id)
+        // Reopen the last kit you were on; fall back to the first.
+        let last: string | null = null
+        try { last = localStorage.getItem(LAST_KIT_STORAGE_KEY) } catch { /* ignore */ }
+        const initial = last && data.some((k) => k.id === last) ? last : data[0].id
+        setSelectedKitId(initial)
       }
     }
     setLoading(false)
@@ -217,9 +222,28 @@ export default function Home() {
   const handleSelectKit = useCallback((id: string) => {
     setSelectedKitId(id)
     pushRecent(id)
+    try { localStorage.setItem(LAST_KIT_STORAGE_KEY, id) } catch { /* ignore */ }
     // On mobile, close the drawer so the kit content is visible immediately.
     setSidebarOpen(!isMobile)
   }, [isMobile, pushRecent])
+
+  // Drop favorites/recents pointing at kits that no longer exist.
+  useEffect(() => {
+    if (kits.length === 0) return
+    const ids = new Set(kits.map((k) => k.id))
+    setFavorites((prev) => {
+      const next = prev.filter((id) => ids.has(id))
+      if (next.length === prev.length) return prev
+      try { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+    setRecentIds((prev) => {
+      const next = prev.filter((id) => ids.has(id))
+      if (next.length === prev.length) return prev
+      try { localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [kits])
 
   const handleAddKit = useCallback(async () => {
     const nombre = `Kit ${kits.length + 1}`
