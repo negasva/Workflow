@@ -9,7 +9,10 @@ interface SidebarProps {
   allGroups: string[]
   orderedGroupNames: string[]
   selectedKitId: string | null
+  favorites: string[]
+  recentIds: string[]
   onClose: () => void
+  onToggleFavorite: (id: string) => void
   onSelectKit: (id: string) => void
   onAddKit: () => void
   onDuplicateKit: (id: string) => void
@@ -26,7 +29,10 @@ export default function Sidebar({
   allGroups,
   orderedGroupNames,
   selectedKitId,
+  favorites,
+  recentIds,
   onClose,
+  onToggleFavorite,
   onSelectKit,
   onAddKit,
   onDuplicateKit,
@@ -72,6 +78,14 @@ export default function Sidebar({
     setNewGroup('')
   }
 
+  // Pinned shortcuts: favorites + recently opened (recents exclude favorites)
+  const favKits = favorites
+    .map((id) => kits.find((k) => k.id === id))
+    .filter((k): k is Kit => !!k)
+  const recentKits = recentIds
+    .map((id) => kits.find((k) => k.id === id))
+    .filter((k): k is Kit => !!k && !favorites.includes(k.id))
+
   const renderKit = (kit: Kit) => (
     <div
       key={kit.id}
@@ -115,6 +129,20 @@ export default function Sidebar({
                 </span>
               </div>
             </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleFavorite(kit.id)
+              }}
+              className={`-mt-0.5 -mr-0.5 p-1 shrink-0 transition-colors ${
+                favorites.includes(kit.id)
+                  ? 'text-yellow-400'
+                  : selectedKitId === kit.id ? 'text-white/50 hover:text-white' : 'text-app-muted hover:text-yellow-400'
+              }`}
+              title={favorites.includes(kit.id) ? 'Quitar de favoritos' : 'Marcar favorito'}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill={favorites.includes(kit.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
           </div>
 
           <div className="mt-3 flex items-center gap-1.5">
@@ -215,6 +243,27 @@ export default function Sidebar({
 
         <div className="flex-1 overflow-y-auto py-2">
           <div className="space-y-2 px-2">
+            {favKits.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-yellow-400/90 select-none">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  Favoritos
+                </div>
+                {favKits.map(renderKit)}
+              </div>
+            )}
+            {recentKits.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-app-muted select-none">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Recientes
+                </div>
+                {recentKits.map(renderKit)}
+              </div>
+            )}
+            {(favKits.length > 0 || recentKits.length > 0) && (
+              <div className="mx-2 my-1 border-t border-app-border" />
+            )}
             {orderedGroupNames.map((group) => (
               <div
                 key={group}

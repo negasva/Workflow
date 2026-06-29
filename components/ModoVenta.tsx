@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Nodo, Conexion, TipoNodo } from '@/types'
 
 interface ModoVentaProps {
@@ -12,6 +12,32 @@ const TIPO_COLOR: Record<TipoNodo, string> = {
   inicio: '#1B3A8C',  // Fishwife deep navy
   yo: '#0D6B5A',      // Fishwife forest teal
   cliente: '#B83A10', // Fishwife warm red
+}
+
+const VARS_STORAGE_KEY = 'copyflow-variables'
+const USAGE_STORAGE_KEY = 'copyflow-usage'
+
+// Detect {variable} tokens across the kit's text.
+function extractVars(nodos: Nodo[]): string[] {
+  const set = new Set<string>()
+  const re = /\{([^}]+)\}/g
+  for (const n of nodos) {
+    let m: RegExpExecArray | null
+    re.lastIndex = 0
+    while ((m = re.exec(n.texto))) {
+      const name = m[1].trim()
+      if (name) set.add(name)
+    }
+  }
+  return Array.from(set)
+}
+
+// Replace {var} with its value for copying (unfilled vars keep their token).
+function fillVars(text: string, values: Record<string, string>): string {
+  return text.replace(/\{([^}]+)\}/g, (_, k) => {
+    const v = values[k.trim()]
+    return v && v.trim() ? v : `{${k.trim()}}`
+  })
 }
 
 function TipoBadge({ tipo, color }: { tipo: TipoNodo; color: string }) {
@@ -32,11 +58,37 @@ function TipoBadge({ tipo, color }: { tipo: TipoNodo; color: string }) {
   )
 }
 
-function renderWappText(text: string) {
-  const parts = text.split(/(\*[^*]+\*)/g)
+// Usage pill (how many times this message was copied/used).
+function UsageBadge({ count }: { count: number }) {
+  if (!count) return null
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+      style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}
+      title={`Usado ${count} ${count === 1 ? 'vez' : 'veces'}`}
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      {count}
+    </span>
+  )
+}
+
+// Render WhatsApp *bold* plus {variables} (filled or highlighted if empty).
+function renderText(text: string, values: Record<string, string>) {
+  const parts = text.split(/(\*[^*]+\*|\{[^}]+\})/g)
   return parts.map((part, i) => {
-    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+    if (/^\*[^*]+\*$/.test(part)) {
       return <strong key={i} className="font-bold">{part.slice(1, -1)}</strong>
+    }
+    if (/^\{[^}]+\}$/.test(part)) {
+      const key = part.slice(1, -1).trim()
+      const val = values[key]
+      if (val && val.trim()) return <span key={i}>{val}</span>
+      return (
+        <span key={i} className="px-1 rounded font-semibold" style={{ background: 'rgba(255,255,255,0.28)' }}>
+          {part}
+        </span>
+      )
     }
     return <span key={i}>{part}</span>
   })
@@ -47,6 +99,42 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
   const [currentId, setCurrentId] = useState<string | null>(rootNode?.id ?? null)
   const [history, setHistory] = useState<string[]>([])
   const [copied, setCopied] = useState<string | null>(null)
+
+  const [varValues, setVarValues] = useState<Record<string, string>>({})
+  const [varsOpen, setVarsOpen] = useState(false)
+  const [usage, setUsage] = useState<Record<string, number>>({})
+
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQ, setSearchQ] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  const varNames = useMemo(() => extractVars(nodos), [nodos])
+
+  // Load persisted variable values + usage counts.
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(VARS_STORAGE_KEY)
+      if (v) setVarValues(JSON.parse(v))
+      const u = localStorage.getItem(USAGE_STORAGE_KEY)
+      if (u) setUsage(JSON.parse(u))
+    } catch { /* ignore */ }
+  }, [])
+
+  const setVar = useCallback((name: string, value: string) => {
+    setVarValues((prev) => {
+      const next = { ...prev, [name]: value }
+      try { localStorage.setItem(VARS_STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+
+  const bumpUsage = useCallback((id: string) => {
+    setUsage((prev) => {
+      const next = { ...prev, [id]: (prev[id] ?? 0) + 1 }
+      try { localStorage.setItem(USAGE_STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
 
   const currentNode = nodos.find((n) => n.id === currentId)
 
@@ -74,11 +162,19 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
     setCurrentId(rootNode?.id ?? null)
   }, [rootNode])
 
-  const handleCopy = useCallback(async (text: string, id: string) => {
+  // Jump straight to any node from search (resets the step path).
+  const handleJump = useCallback((nodeId: string) => {
+    setHistory([])
+    setCurrentId(nodeId)
+    setSearchOpen(false)
+    setSearchQ('')
+  }, [])
+
+  const handleCopy = useCallback(async (rawText: string, id: string) => {
+    const text = fillVars(rawText, varValues)
+    bumpUsage(id)
     try {
       await navigator.clipboard.writeText(text)
-      setCopied(id)
-      setTimeout(() => setCopied(null), 2000)
     } catch {
       const el = document.createElement('textarea')
       el.value = text
@@ -86,10 +182,20 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
       el.select()
       document.execCommand('copy')
       document.body.removeChild(el)
-      setCopied(id)
-      setTimeout(() => setCopied(null), 2000)
     }
-  }, [])
+    setCopied(id)
+    setTimeout(() => setCopied(null), 2000)
+  }, [varValues, bumpUsage])
+
+  useEffect(() => {
+    if (searchOpen) setTimeout(() => searchRef.current?.focus(), 50)
+  }, [searchOpen])
+
+  const searchResults = useMemo(() => {
+    const q = searchQ.trim().toLowerCase()
+    if (!q) return nodos.slice(0, 12)
+    return nodos.filter((n) => n.texto.toLowerCase().includes(q)).slice(0, 20)
+  }, [searchQ, nodos])
 
   if (!currentNode) {
     return (
@@ -107,6 +213,8 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
   }
 
   const borderColor = TIPO_COLOR[currentNode.tipo] ?? '#94a3b8'
+  // count how many variables still have no value
+  const missingVars = varNames.filter((v) => !(varValues[v] && varValues[v].trim())).length
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg-app)' }}>
@@ -130,14 +238,97 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
           Inicio
         </button>
-        <div className="ml-auto text-xs text-app-muted font-mono">
-          Paso {history.length + 1}
+
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            onClick={() => setSearchOpen((s) => !s)}
+            className={`p-2 rounded-lg transition-colors ${searchOpen ? 'bg-brand text-white' : 'text-app-muted hover:text-app-text hover:bg-app-surface-2'}`}
+            title="Buscar mensaje y saltar"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <span className="text-xs text-app-muted font-mono pl-1">Paso {history.length + 1}</span>
         </div>
       </div>
+
+      {/* Inline search & jump */}
+      {searchOpen && (
+        <div className="border-b border-app-border" style={{ background: 'var(--bg-surface)' }}>
+          <div className="max-w-2xl mx-auto px-3 sm:px-4 py-2">
+            <input
+              ref={searchRef}
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') { setSearchOpen(false); setSearchQ('') }
+                if (e.key === 'Enter' && searchResults[0]) handleJump(searchResults[0].id)
+              }}
+              placeholder="Buscar mensaje y saltar a él..."
+              className="w-full px-3 py-2.5 rounded-xl border bg-app-surface-2 text-app-text placeholder:text-app-muted text-sm outline-none focus:border-brand"
+              style={{ borderColor: 'var(--border)' }}
+            />
+            {(searchQ.trim() || searchResults.length > 0) && (
+              <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-app-border divide-y divide-app-border">
+                {searchResults.length === 0 ? (
+                  <div className="px-3 py-4 text-center text-sm text-app-muted">Sin resultados</div>
+                ) : searchResults.map((n) => {
+                  const c = TIPO_COLOR[n.tipo]
+                  return (
+                    <button
+                      key={n.id}
+                      onClick={() => handleJump(n.id)}
+                      className="w-full text-left px-3 py-2.5 flex items-start gap-2.5 hover:bg-app-surface-2 transition-colors"
+                    >
+                      <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0" style={{ background: `${c}22`, color: c }}>
+                        {n.tipo}
+                      </span>
+                      <span className="text-sm text-app-text line-clamp-2 flex-1">{n.texto || '(vacío)'}</span>
+                      {usage[n.id] ? <span className="text-[11px] text-app-muted shrink-0">×{usage[n.id]}</span> : null}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-3 sm:space-y-4">
+          {/* Variables panel (collapsed by default) */}
+          {varNames.length > 0 && (
+            <div className="rounded-xl border border-app-border overflow-hidden" style={{ background: 'var(--bg-surface)' }}>
+              <button
+                onClick={() => setVarsOpen((o) => !o)}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-left"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-app-muted"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                <span className="text-sm font-semibold text-app-text">Variables</span>
+                {missingVars > 0 && (
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-brand/15 text-brand font-semibold">{missingVars} sin llenar</span>
+                )}
+                <svg className={`ml-auto w-4 h-4 text-app-muted transition-transform ${varsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {varsOpen && (
+                <div className="px-3 pb-3 space-y-2">
+                  {varNames.map((name) => (
+                    <div key={name} className="flex items-center gap-2">
+                      <label className="text-xs text-app-muted font-mono w-24 shrink-0 truncate" title={name}>{`{${name}}`}</label>
+                      <input
+                        value={varValues[name] ?? ''}
+                        onChange={(e) => setVar(name, e.target.value)}
+                        placeholder={`Valor de ${name}`}
+                        className="flex-1 min-w-0 px-3 py-2 rounded-lg border bg-app-surface-2 text-app-text placeholder:text-app-muted text-sm outline-none focus:border-brand"
+                        style={{ borderColor: 'var(--border)' }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Current node card */}
           <div
             className="p-4 sm:p-5"
@@ -149,7 +340,10 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
             }}
           >
             <div className="flex items-center justify-between gap-2 mb-3">
-              <TipoBadge tipo={currentNode.tipo} color="rgba(255,255,255,0.9)" />
+              <div className="flex items-center gap-2 min-w-0">
+                <TipoBadge tipo={currentNode.tipo} color="rgba(255,255,255,0.9)" />
+                <UsageBadge count={usage[currentNode.id] ?? 0} />
+              </div>
               {(currentNode.tipo === 'yo' || currentNode.tipo === 'inicio') && (
                 <button
                   onClick={() => handleCopy(currentNode.texto, currentNode.id)}
@@ -176,7 +370,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
             </div>
 
             <p className="text-white text-[15px] sm:text-base leading-relaxed wapp-text whitespace-pre-wrap">
-              {renderWappText(currentNode.texto)}
+              {renderText(currentNode.texto, varValues)}
             </p>
           </div>
 
@@ -204,7 +398,10 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
                     }}
                   >
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <TipoBadge tipo={node.tipo} color="rgba(255,255,255,0.9)" />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <TipoBadge tipo={node.tipo} color="rgba(255,255,255,0.9)" />
+                        <UsageBadge count={usage[node.id] ?? 0} />
+                      </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -233,7 +430,7 @@ export default function ModoVenta({ nodos, conexiones }: ModoVentaProps) {
 
                     <div className="flex items-start gap-3">
                       <span className="text-white text-sm leading-relaxed wapp-text whitespace-pre-wrap flex-1">
-                        {renderWappText(node.texto)}
+                        {renderText(node.texto, varValues)}
                       </span>
                       <svg
                         className="w-5 h-5 text-white/70 shrink-0 mt-0.5"
