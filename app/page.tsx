@@ -19,6 +19,9 @@ type Theme = 'light' | 'dark'
 const ACCESS_STORAGE_KEY = 'copyflow-access'
 const GROUPS_STORAGE_KEY = 'copyflow-kit-groups'
 const GROUP_ORDER_STORAGE_KEY = 'copyflow-group-order'
+const FAVORITES_STORAGE_KEY = 'copyflow-favorites'
+const RECENT_STORAGE_KEY = 'copyflow-recent'
+const RECENT_LIMIT = 4
 
 export default function Home() {
   const [kits, setKits] = useState<Kit[]>([])
@@ -40,6 +43,8 @@ export default function Home() {
   const [accessError, setAccessError] = useState(false)
   const [kitGroups, setKitGroups] = useState<Record<string, string>>({})
   const [groupsOrder, setGroupsOrder] = useState<string[]>([])
+  const [favorites, setFavorites] = useState<string[]>([])
+  const [recentIds, setRecentIds] = useState<string[]>([])
 
   const selectedKit = kits.find((k) => k.id === selectedKitId)
   const accessKey = process.env.NEXT_PUBLIC_APP_ACCESS_KEY?.trim() ?? ''
@@ -116,6 +121,32 @@ export default function Home() {
     } catch { /* ignore */ }
   }, [groupsOrder])
 
+  // Favorites + recently-used kits (persisted in localStorage)
+  useEffect(() => {
+    try {
+      const f = localStorage.getItem(FAVORITES_STORAGE_KEY)
+      if (f) setFavorites(JSON.parse(f))
+      const r = localStorage.getItem(RECENT_STORAGE_KEY)
+      if (r) setRecentIds(JSON.parse(r))
+    } catch { /* ignore */ }
+  }, [])
+
+  const handleToggleFavorite = useCallback((id: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      try { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+
+  const pushRecent = useCallback((id: string) => {
+    setRecentIds((prev) => {
+      const next = [id, ...prev.filter((x) => x !== id)].slice(0, RECENT_LIMIT)
+      try { localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+
   const handleToggleTheme = useCallback(() => {
     setTheme((t) => {
       const next: Theme = t === 'dark' ? 'light' : 'dark'
@@ -185,9 +216,10 @@ export default function Home() {
 
   const handleSelectKit = useCallback((id: string) => {
     setSelectedKitId(id)
+    pushRecent(id)
     // On mobile, close the drawer so the kit content is visible immediately.
     setSidebarOpen(!isMobile)
-  }, [isMobile])
+  }, [isMobile, pushRecent])
 
   const handleAddKit = useCallback(async () => {
     const nombre = `Kit ${kits.length + 1}`
@@ -400,7 +432,10 @@ export default function Home() {
           allGroups={allGroups}
           orderedGroupNames={orderedGroupNames}
           selectedKitId={selectedKitId}
+          favorites={favorites}
+          recentIds={recentIds}
           onClose={() => setSidebarOpen(false)}
+          onToggleFavorite={handleToggleFavorite}
           onSelectKit={handleSelectKit}
           onAddKit={handleAddKit}
           onDuplicateKit={handleDuplicateKit}
