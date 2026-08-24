@@ -760,6 +760,17 @@ export default function ModoEditor({
   const undoHistoryRef = useRef<UndoEntry[]>([])
   useEffect(() => { undoHistoryRef.current = undoHistory }, [undoHistory])
 
+  // Touch devices: lock nodes so one-finger drag pans the canvas (navigate)
+  // instead of accidentally moving a node.
+  const [isTouch, setIsTouch] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(pointer: coarse)')
+    const apply = () => setIsTouch(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
   const [snapEnabled, setSnapEnabled] = useState(false)
   useEffect(() => {
     const saved = localStorage.getItem('copyflow-snap')
@@ -1224,12 +1235,18 @@ export default function ModoEditor({
         onNodeDragStart={onNodeDragStart}
         onNodeDragStop={onNodeDragStop}
         fitView
-        fitViewOptions={{ padding: 0.3 }}
+        fitViewOptions={{ padding: 0.3, minZoom: 0.1 }}
+        minZoom={0.1}
+        maxZoom={2.5}
         deleteKeyCode="Delete"
         proOptions={{ hideAttribution: true }}
         snapToGrid={snapEnabled}
         snapGrid={[20, 20]}
         connectionMode={ConnectionMode.Loose}
+        nodesDraggable={!isTouch}
+        panOnDrag
+        panOnScroll={false}
+        zoomOnPinch
       >
         <Background color="var(--dot-pattern)" gap={20} size={1} />
         <Controls />
@@ -1287,7 +1304,7 @@ export default function ModoEditor({
           </Panel>
         )}
 
-        <Panel position="bottom-right">
+        <Panel position="bottom-right" style={{ marginBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}>
           <button
             onClick={handleAddNodo}
             className="w-14 h-14 bg-brand hover:bg-brand-hover text-white rounded-full text-2xl flex items-center justify-center transition-all hover:scale-105 hover:shadow-node"

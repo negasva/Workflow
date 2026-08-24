@@ -9,6 +9,7 @@ import Sidebar from '@/components/Sidebar'
 import ModoVenta from '@/components/ModoVenta'
 import IconNav from '@/components/IconNav'
 import SearchModal from '@/components/SearchModal'
+import StatsModal from '@/components/StatsModal'
 import ShortcutsModal from '@/components/ShortcutsModal'
 import ExportImportModal from '@/components/ExportImportModal'
 import dynamicImport from 'next/dynamic'
@@ -46,6 +47,10 @@ export default function Home() {
   const [groupsOrder, setGroupsOrder] = useState<string[]>([])
   const [favorites, setFavorites] = useState<string[]>([])
   const [recentIds, setRecentIds] = useState<string[]>([])
+  const [allNodos, setAllNodos] = useState<Nodo[]>([])
+  const [jumpNode, setJumpNode] = useState<string | null>(null)
+  const [jumpNonce, setJumpNonce] = useState(0)
+  const [statsOpen, setStatsOpen] = useState(false)
 
   const selectedKit = kits.find((k) => k.id === selectedKitId)
   const accessKey = process.env.NEXT_PUBLIC_APP_ACCESS_KEY?.trim() ?? ''
@@ -397,12 +402,21 @@ export default function Home() {
     if (selectedKitId) loadKitData(selectedKitId, true) // silent — no loading spinner
   }, [selectedKitId, loadKitData])
 
+  // Open global search and lazily load every kit's nodes so search spans all kits.
+  const openSearch = useCallback(async () => {
+    setSearchOpen(true)
+    try {
+      const { data } = await supabase.from('nodos').select('*')
+      if (data) setAllNodos(data as Nodo[])
+    } catch { /* ignore */ }
+  }, [])
+
   // Global hotkeys: Ctrl+K (search), ? (shortcuts)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault()
-        setSearchOpen(true)
+        openSearch()
       }
       const target = e.target as HTMLElement | null
       const tag = target?.tagName
@@ -414,12 +428,20 @@ export default function Home() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [openSearch])
 
-  const handleSearchSelect = useCallback((nodoId: string) => {
-    setMode('editor')
-    void nodoId
-  }, [])
+  // Jump to a node from global search: switch kit if needed, go to Venta, land on it.
+  const handleSearchSelect = useCallback((nodoId: string, kitId?: string) => {
+    setMode('venta')
+    if (kitId && kitId !== selectedKitIdRef.current) {
+      setSelectedKitId(kitId)
+      pushRecent(kitId)
+      try { localStorage.setItem(LAST_KIT_STORAGE_KEY, kitId) } catch { /* ignore */ }
+    }
+    setJumpNode(nodoId)
+    setJumpNonce((n) => n + 1)
+    setSearchOpen(false)
+  }, [pushRecent])
 
   if (loading) {
     return (
@@ -443,7 +465,8 @@ export default function Home() {
         onSetMode={setMode}
         onAddKit={handleAddKit}
         onToggleTheme={handleToggleTheme}
-        onOpenSearch={() => setSearchOpen(true)}
+        onOpenSearch={openSearch}
+        onOpenStats={() => setStatsOpen(true)}
         onOpenExport={() => setExportOpen(true)}
         onOpenShortcuts={() => setShortcutsOpen(true)}
         onFocusKits={() => setSidebarOpen((s) => !s)}
@@ -475,7 +498,11 @@ export default function Home() {
         {/* Kit header */}
         <div
           className="px-3 md:px-6 py-2.5 md:py-3 border-b flex items-center gap-2 md:gap-3 min-h-[52px]"
-          style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+          style={{
+            background: 'var(--bg-surface)',
+            borderColor: 'var(--border)',
+            paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)',
+          }}
         >
           {selectedKit ? (
             <>
@@ -547,7 +574,7 @@ export default function Home() {
             </div>
           </div>
         ) : mode === 'venta' ? (
-          <ModoVenta nodos={nodos} conexiones={conexiones} />
+          <ModoVenta key={selectedKitId ?? 'none'} nodos={nodos} conexiones={conexiones} jumpNode={jumpNode} jumpNonce={jumpNonce} />
         ) : (
         <ModoEditor
           key={selectedKitId!}
@@ -563,10 +590,12 @@ export default function Home() {
 
       <SearchModal
         open={searchOpen}
-        nodos={nodos}
+        nodos={allNodos.length ? allNodos : nodos}
+        kitNames={Object.fromEntries(kits.map((k) => [k.id, k.nombre]))}
         onClose={() => setSearchOpen(false)}
         onSelect={handleSearchSelect}
       />
+      <StatsModal open={statsOpen} onClose={() => setStatsOpen(false)} />
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <ExportImportModal
         open={exportOpen}
